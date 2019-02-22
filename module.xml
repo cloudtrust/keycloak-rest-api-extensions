@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+
+<module xmlns="urn:jboss:module:1.3" name="io.cloudtrust.keycloak-rest-api-extensions">
+
+    <resources>
+        <resource-root path="JAR_NAME"/>
+    </resources>
+
+    <dependencies>
+        <module name="org.keycloak.keycloak-core"/>
+        <module name="org.keycloak.keycloak-common"/>
+        <module name="org.keycloak.keycloak-server-spi"/>
+        <module name="org.keycloak.keycloak-server-spi-private"/>
+        <module name="org.keycloak.keycloak-services"/>
+        <module name="org.jboss.resteasy.resteasy-jaxrs"/>
+        <module name="org.jboss.logging"/>
+        <module name="javax.ws.rs.api"/>
+        <module name="javax.api"/>
+        <module name="javax.json.api"/>
+        <module name="javax.servlet.api"/>
+    </dependencies>
+</module>
