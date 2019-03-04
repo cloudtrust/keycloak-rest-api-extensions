@@ -1,20 +1,22 @@
 package io.cloudtrust.keycloak.services.resource.api;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.NotFoundException;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.jboss.resteasy.spi.UnauthorizedException;
-import org.keycloak.common.ClientConnection;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.services.managers.AppAuthManager;
 import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.services.resources.admin.AdminAuth;
+import org.keycloak.services.resources.admin.AdminCorsPreflightService;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 import org.keycloak.services.resources.admin.permissions.AdminPermissions;
 
+import javax.ws.rs.HttpMethod;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 
@@ -36,7 +38,11 @@ public class ApiRoot {
      * @return
      */
     @Path("users")
-    public UsersResource users() {
+    public Object users(@Context HttpRequest request) {
+
+        if (request.getHttpMethod().equals(HttpMethod.OPTIONS)) {
+            return new AdminCorsPreflightService(request);
+        }
 
         AdminAuth auth = authenticateRealmAdminRequest();
         if (auth != null) {
