@@ -5,7 +5,7 @@ import org.keycloak.credential.CredentialModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
-import org.keycloak.representations.idm.CredentialRepresentation;
+import io.cloudtrust.keycloak.representations.idm.CredentialRepresentation ;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 import org.keycloak.services.resources.admin.permissions.UserPermissionEvaluator;
@@ -45,6 +45,7 @@ public class CredentialsResource {
 
     public CredentialRepresentation toRepresentation(CredentialModel model) {
         CredentialRepresentation result = new CredentialRepresentation();
+        result.setId(model.getId());
         result.setDevice(model.getDevice());
         result.setAlgorithm(model.getAlgorithm());
         result.setConfig(model.getConfig());
