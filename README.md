@@ -24,5 +24,5 @@ Then use the token to get the credentials:
 ```
 curl \
   -H "Authorization: bearer eyJhbGciOiJSUz..." \
-  "http://localhost:8080/auth/realms/{realm}/api/users/{userid}/credentials"
+  "http://localhost:8080/auth/realms/master/api/realms/{realm}/users/{userid}/credentials"
 ```
