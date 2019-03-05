@@ -2,76 +2,57 @@ package io.cloudtrust.keycloak.services.resource.api;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.spi.HttpRequest;
-import org.jboss.resteasy.spi.HttpResponse;
 import org.jboss.resteasy.spi.NotFoundException;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.jboss.resteasy.spi.UnauthorizedException;
+import org.keycloak.jose.jws.JWSInput;
+import org.keycloak.jose.jws.JWSInputException;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
-import org.keycloak.services.managers.AppAuthManager;
+import org.keycloak.representations.AccessToken;
 import org.keycloak.services.managers.AuthenticationManager;
+import org.keycloak.services.managers.RealmManager;
 import org.keycloak.services.resources.Cors;
 import org.keycloak.services.resources.admin.AdminAuth;
 import org.keycloak.services.resources.admin.AdminCorsPreflightService;
-import org.keycloak.services.resources.admin.AdminEventBuilder;
-import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
-import org.keycloak.services.resources.admin.permissions.AdminPermissions;
+import org.keycloak.services.resources.admin.AdminRoot;
+import org.keycloak.services.resources.admin.RealmsAdminResource;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 
-public class ApiRoot {
+public class ApiRoot extends AdminRoot {
 
     protected static final Logger logger = Logger.getLogger(ApiRoot.class);
 
-    private final KeycloakSession session;
-    private final RealmModel realm;
-
     public ApiRoot(KeycloakSession session) {
         this.session = session;
-        realm = session.getContext().getRealm();
     }
 
     /**
-     * Base path for managing users in this realm.
+     * Base Path to realm admin REST interface
      *
+     * @param request
      * @return
      */
-    @Path("users")
-    public Object users(@Context HttpRequest request, @Context HttpResponse response) {
-
+    @Path("realms")
+    public Object getRealmsAdmin(@Context final HttpRequest request) {
         if (request.getHttpMethod().equals(HttpMethod.OPTIONS)) {
             return new AdminCorsPreflightService(request);
         }
 
-        AdminAuth auth = authenticateRealmAdminRequest();
+        AdminAuth auth = authenticateRealmAdminRequest(request.getHttpHeaders());
         if (auth != null) {
             logger.debug("authenticated admin access for: " + auth.getUser().getUsername());
         }
 
         Cors.add(request).allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().build(response);
 
-        AdminPermissionEvaluator realmAuth = AdminPermissions.evaluator(session, realm, auth);
-        AdminEventBuilder adminEvent = new AdminEventBuilder(realm, auth, session, session.getContext().getConnection());
-
-        UsersResource users = new UsersResource(session, realmAuth, adminEvent);
-        ResteasyProviderFactory.getInstance().injectProperties(users);
-        return users;
-    }
-
-    private AdminAuth authenticateRealmAdminRequest() {
-        AuthenticationManager.AuthResult auth = new AppAuthManager().authenticateBearerToken(session, session.getContext().getRealm());
-        if (auth == null) {
-            logger.debug("Token not valid");
-            throw new UnauthorizedException("Bearer");
-        }
-        ClientModel client = realm.getClientByClientId(auth.getToken().getIssuedFor());
-        if (client == null) {
-            throw new NotFoundException("Could not find client for authorization");
-
-        }
-        return new AdminAuth(realm, auth.getToken(), auth.getUser(), client);
+        RealmsAdminResource adminResource = new RealmsApiResource(auth, tokenManager, session);
+        ResteasyProviderFactory.getInstance().injectProperties(adminResource);
+        return adminResource;
     }
 }
