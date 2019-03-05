@@ -2,6 +2,7 @@ package io.cloudtrust.keycloak.services.resource.api;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.spi.HttpRequest;
+import org.jboss.resteasy.spi.HttpResponse;
 import org.jboss.resteasy.spi.NotFoundException;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.jboss.resteasy.spi.UnauthorizedException;
@@ -10,6 +11,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.services.managers.AppAuthManager;
 import org.keycloak.services.managers.AuthenticationManager;
+import org.keycloak.services.resources.Cors;
 import org.keycloak.services.resources.admin.AdminAuth;
 import org.keycloak.services.resources.admin.AdminCorsPreflightService;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
@@ -38,7 +40,7 @@ public class ApiRoot {
      * @return
      */
     @Path("users")
-    public Object users(@Context HttpRequest request) {
+    public Object users(@Context HttpRequest request, @Context HttpResponse response) {
 
         if (request.getHttpMethod().equals(HttpMethod.OPTIONS)) {
             return new AdminCorsPreflightService(request);
@@ -48,6 +50,9 @@ public class ApiRoot {
         if (auth != null) {
             logger.debug("authenticated admin access for: " + auth.getUser().getUsername());
         }
+
+        Cors.add(request).allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().build(response);
+
         AdminPermissionEvaluator realmAuth = AdminPermissions.evaluator(session, realm, auth);
         AdminEventBuilder adminEvent = new AdminEventBuilder(realm, auth, session, session.getContext().getConnection());
 
