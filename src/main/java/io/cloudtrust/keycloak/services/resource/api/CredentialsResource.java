@@ -55,7 +55,6 @@ public class CredentialsResource {
         result.setDigits(model.getDigits());
         result.setHashIterations(model.getHashIterations());
         result.setPeriod(model.getPeriod());
-        result.setCreatedDate(model.getCreatedDate());
         return result;
     }
 }
