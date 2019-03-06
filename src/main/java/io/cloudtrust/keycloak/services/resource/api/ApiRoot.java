@@ -2,6 +2,7 @@ package io.cloudtrust.keycloak.services.resource.api;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.spi.HttpRequest;
+import org.jboss.resteasy.spi.HttpResponse;
 import org.jboss.resteasy.spi.NotFoundException;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.jboss.resteasy.spi.UnauthorizedException;
@@ -39,7 +40,7 @@ public class ApiRoot extends AdminRoot {
      * @return
      */
     @Path("realms")
-    public Object getRealmsAdmin(@Context final HttpRequest request) {
+    public Object getRealmsAdmin(@Context final HttpRequest request, @Context HttpResponse response) {
         if (request.getHttpMethod().equals(HttpMethod.OPTIONS)) {
             return new AdminCorsPreflightService(request);
         }
