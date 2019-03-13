@@ -18,6 +18,7 @@ import org.keycloak.storage.StorageId;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -66,27 +67,32 @@ public class CredentialsResource {
 
     @Path("{id}")
     @DELETE
-    public void deleteCredential(final @PathParam("id") String id) {
+    public Response deleteCredential(final @PathParam("id") String id) {
         auth.users().requireManage(user);
         try {
+            // We grab the User Credential Store
             UserCredentialStore ucs;
             if (StorageId.isLocalStorage(user)) {
                 ucs = (UserCredentialStore) session.userLocalStorage();
             } else {
                 ucs = (UserCredentialStore) session.userFederatedStorage();
             }
+            // We remove the credential
             if (ucs.removeStoredCredential(realm, user, id)) {
+                // In case of success, we log the action and commit the transaction
                 adminEvent.operation(OperationType.UPDATE).resourcePath(session.getContext().getUri()).success();
                 if (session.getTransactionManager().isActive()) {
                     session.getTransactionManager().commit();
                 }
+                return Response.noContent().build();
             } else {
                 logger.warn("Could not delete credential " + id + " of user " + user.getUsername() +
                         "! removeStoredCredential() returned false.");
             }
-        } catch (Exception me) {
-            logger.warn("Could not delete credential " + id + " of user " + user.getUsername() + "!", me);
+        } catch (Exception e) {
+            logger.warn("Could not delete credential " + id + " of user " + user.getUsername() + "!", e);
         }
+        return ErrorResponse.exists("Could not delete credential!");
     }
 
     public CredentialRepresentation toRepresentation(CredentialModel model) {
