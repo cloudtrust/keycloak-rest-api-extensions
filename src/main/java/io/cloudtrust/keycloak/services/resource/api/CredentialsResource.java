@@ -4,8 +4,6 @@ import io.cloudtrust.keycloak.representations.idm.CredentialRepresentation;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.keycloak.credential.CredentialModel;
-import org.keycloak.credential.UserCredentialStore;
-import org.keycloak.credential.UserCredentialStoreManager;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
@@ -16,7 +14,6 @@ import org.keycloak.services.ForbiddenException;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 import org.keycloak.services.resources.admin.permissions.UserPermissionEvaluator;
-import org.keycloak.storage.StorageId;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
