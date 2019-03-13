@@ -5,10 +5,12 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.keycloak.credential.CredentialModel;
 import org.keycloak.credential.UserCredentialStore;
+import org.keycloak.credential.UserCredentialStoreManager;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.models.cache.UserCache;
 import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.ForbiddenException;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
@@ -70,20 +72,20 @@ public class CredentialsResource {
     public Response deleteCredential(final @PathParam("id") String id) {
         auth.users().requireManage(user);
         try {
-            // We grab the User Credential Store
-            UserCredentialStore ucs;
-            if (StorageId.isLocalStorage(user)) {
-                ucs = (UserCredentialStore) session.userLocalStorage();
-            } else {
-                ucs = (UserCredentialStore) session.userFederatedStorage();
-            }
-            // We remove the credential
-            if (ucs.removeStoredCredential(realm, user, id)) {
-                // In case of success, we log the action and commit the transaction
+            // We remove the credential. In case of success...
+            if (session.userCredentialManager().removeStoredCredential(realm, user, id)) {
+                // We log the action
                 adminEvent.operation(OperationType.UPDATE).resourcePath(session.getContext().getUri()).success();
+                // We evict the user from the cache (or else he can still use his credential even if it's gone!)
+                UserCache userCache = session.userCache();
+                if (userCache != null) {
+                    userCache.evict(realm, user);
+                }
+                // We commit the transaction
                 if (session.getTransactionManager().isActive()) {
                     session.getTransactionManager().commit();
                 }
+                // We return an empty response
                 return Response.noContent().build();
             } else {
                 logger.warn("Could not delete credential " + id + " of user " + user.getUsername() +
