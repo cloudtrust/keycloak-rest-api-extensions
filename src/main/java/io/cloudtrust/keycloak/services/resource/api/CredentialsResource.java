@@ -57,7 +57,7 @@ public class CredentialsResource {
             // We remove the credential. In case of success...
             if (session.userCredentialManager().removeStoredCredential(realm, user, id)) {
                 // We log the action
-                adminEvent.operation(OperationType.UPDATE).resourcePath(session.getContext().getUri()).success();
+                adminEvent.operation(OperationType.DELETE).resourcePath(session.getContext().getUri()).success();
                 // We evict the user from the cache (or else he can still use his credential even if it's gone!)
                 UserCache userCache = session.userCache();
                 if (userCache != null) {
