@@ -10,7 +10,6 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.cache.UserCache;
 import org.keycloak.services.ErrorResponse;
-import org.keycloak.services.ForbiddenException;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 import org.keycloak.services.resources.admin.permissions.UserPermissionEvaluator;
@@ -48,20 +47,6 @@ public class CredentialsResource {
 
         return session.userCredentialManager().getStoredCredentials(realm, user).stream().map(this::toRepresentation)
                 .collect(Collectors.toList());
-    }
-
-    @Path("{id}")
-    @GET
-    @NoCache
-    @Produces(MediaType.APPLICATION_JSON)
-    public CredentialRepresentation getCredential(final @PathParam("id") String id) {
-        CredentialModel credential = session.userCredentialManager().getStoredCredentialById(realm, user, id);
-        if (credential == null) {
-            // we do this to make sure somebody can't phish ids
-            if (auth.users().canQuery()) throw new NotFoundException("Credential not found");
-            else throw new ForbiddenException();
-        }
-        return toRepresentation(session.userCredentialManager().getStoredCredentialById(realm, user, id));
     }
 
     @Path("{id}")
