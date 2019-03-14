@@ -26,3 +26,11 @@ curl \
   -H "Authorization: bearer eyJhbGciOiJSUz..." \
   "http://localhost:8080/auth/realms/master/api/realms/{realm}/users/{userid}/credentials"
 ```
+
+If you want to delete a credential:
+```
+curl \
+  -H "Authorization: bearer eyJhbGciOiJSUz..." \
+  -v -X "DELETE"
+  "http://localhost:8080/auth/realms/master/api/realms/{realm}/users/{userid}/credentials/{credentialid}"
+```
