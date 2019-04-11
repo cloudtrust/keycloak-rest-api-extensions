@@ -2,7 +2,10 @@
 
 This module implementents extensions to keycloak's REST API. Currently implemented functions are:
 
-* credentials: gets a list of users credentials
+* admin
+  * gets a list of users credentials
+  * delete a credential
+* account : Fix a bug with CORS
 
 Currently works under keycloak 4.8.3.Final
 
@@ -24,7 +27,7 @@ Then use the token to get the credentials:
 ```
 curl \
   -H "Authorization: bearer eyJhbGciOiJSUz..." \
-  "http://localhost:8080/auth/realms/master/api/realms/{realm}/users/{userid}/credentials"
+  "http://localhost:8080/auth/realms/master/api/admin/realms/{realm}/users/{userid}/credentials"
 ```
 
 If you want to delete a credential:
@@ -32,5 +35,5 @@ If you want to delete a credential:
 curl \
   -H "Authorization: bearer eyJhbGciOiJSUz..." \
   -v -X "DELETE"
-  "http://localhost:8080/auth/realms/master/api/realms/{realm}/users/{userid}/credentials/{credentialid}"
+  "http://localhost:8080/auth/realms/master/api/admin/realms/{realm}/users/{userid}/credentials/{credentialid}"
 ```

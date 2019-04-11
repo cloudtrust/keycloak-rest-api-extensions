@@ -1,4 +1,4 @@
-package io.cloudtrust.keycloak.services.resource.api;
+package io.cloudtrust.keycloak.services.resource.api.admin;
 
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.events.admin.ResourceType;
