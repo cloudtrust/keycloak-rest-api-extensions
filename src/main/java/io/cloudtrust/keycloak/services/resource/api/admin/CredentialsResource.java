@@ -1,4 +1,4 @@
-package io.cloudtrust.keycloak.services.resource.api;
+package io.cloudtrust.keycloak.services.resource.api.admin;
 
 import io.cloudtrust.keycloak.representations.idm.CredentialRepresentation;
 import org.jboss.logging.Logger;
@@ -56,7 +56,7 @@ public class CredentialsResource {
         try {
             // We remove the credential. In case of success...
             if (session.userCredentialManager().removeStoredCredential(realm, user, id)) {
-                // We log the action
+                // We log an event
                 adminEvent.operation(OperationType.DELETE).resourcePath(session.getContext().getUri()).success();
                 // We evict the user from the cache (or else he can still use his credential even if it's gone!)
                 UserCache userCache = session.userCache();
