@@ -411,11 +411,12 @@
                     <systemPropertyVariables>
                         <arquillian.xml>src/test/resources/arquillian.xml</arquillian.xml>
                         <jboss.server.config.dir>src/test/resources</jboss.server.config.dir>
+                        <log4j.configuration>file:${project.build.directory}/test-classes/log4j.properties</log4j.configuration>
                     </systemPropertyVariables>
                     <properties>
                         <property>
                             <name>listener</name>
-                            <value>io.cloudtrust.keycloak.util.DummyListener</value>
+                            <value>DummyListener</value>
                         </property>
                     </properties>
                     <argLine>${argLine}</argLine>
