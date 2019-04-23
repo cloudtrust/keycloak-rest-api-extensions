@@ -416,7 +416,7 @@
                     <properties>
                         <property>
                             <name>listener</name>
-                            <value>DummyListener</value>
+                            <value>io.cloudtrust.keycloak.util.DummyListener</value>
                         </property>
                     </properties>
                     <argLine>${argLine}</argLine>
