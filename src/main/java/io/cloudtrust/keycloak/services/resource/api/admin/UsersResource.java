@@ -100,13 +100,13 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
         Set<String> usersWithGroup = new HashSet<>();
         if (groups != null && !groups.isEmpty()) {
             this.auth.groups().requireView();
-            groups.stream().flatMap(group -> session.users().getGroupMembers(realm, realm.getGroupById(group)).stream()).forEach(user -> usersWithGroup.add(user.getId()));
+            groups.stream().filter(group -> realm.getGroupById(group) != null).flatMap(group -> session.users().getGroupMembers(realm, realm.getGroupById(group)).stream()).forEach(user -> usersWithGroup.add(user.getId()));
             tempUsers = tempUsers.stream().filter(user -> usersWithGroup.contains(user.getId())).collect(Collectors.toList());
         }
         Set<String> usersWithRole = new HashSet<>();
         if (roles != null && !roles.isEmpty()) {
             auth.roles().requireView(session.getContext().getRealm());
-            roles.stream().flatMap(role -> session.users().getRoleMembers(realm, realm.getRole(role)).stream()).forEach(user -> usersWithRole.add(user.getId()));
+            roles.stream().filter(role -> realm.getRole(role) != null).flatMap(role -> session.users().getRoleMembers(realm, realm.getRole(role)).stream()).forEach(user -> usersWithRole.add(user.getId()));
             tempUsers = tempUsers.stream().filter(user -> usersWithRole.contains(user.getId())).collect(Collectors.toList());
         }
         return tempUsers;
