@@ -40,7 +40,7 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
     /**
      * Create a new user.
      * This extended API allows to assign groups and roles at user creation.
-     *
+     * <p>
      * Username must be unique.
      *
      * @param rep
@@ -55,28 +55,31 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
         List<GroupModel> groups = new ArrayList<>();
         List<RoleModel> roles = new ArrayList<>();
 
-        for (String groupId: rep.getGroups()) {
-            GroupModel group = session.realms().getGroupById(groupId, realm);
+        if (rep.getGroups() != null) {
+            for (String groupId : rep.getGroups()) {
+                GroupModel group = session.realms().getGroupById(groupId, realm);
 
-            if (group == null) {
-                throw new org.jboss.resteasy.spi.NotFoundException("Group not found");
+                if (group == null) {
+                    throw new org.jboss.resteasy.spi.NotFoundException("Group not found");
+                }
+
+                auth.groups().requireManageMembership(group);
+                groups.add(group);
             }
-
-            auth.groups().requireManageMembership(group);
-            groups.add(group);
         }
 
-        for (String roleId: rep.getRealmRoles()){
-            RoleModel role = realm.getRoleById(roleId);
+        if (rep.getRealmRoles() != null) {
+            for (String roleId : rep.getRealmRoles()) {
+                RoleModel role = realm.getRoleById(roleId);
 
-            if (role == null ) {
-                throw new org.jboss.resteasy.spi.NotFoundException("Role not found");
+                if (role == null) {
+                    throw new org.jboss.resteasy.spi.NotFoundException("Role not found");
+                }
+
+                auth.roles().requireMapRole(role);
+                roles.add(role);
             }
-
-            auth.roles().requireMapRole(role);
-            roles.add(role);
         }
-
 
         // Double-check duplicated username and email here due to federation
         if (session.users().getUserByUsername(rep.getUsername(), realm) != null) {
@@ -94,12 +97,12 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
             RepresentationToModel.createCredentials(rep, session, realm, user, true);
 
             // Add groups
-            for (GroupModel group: groups) {
+            for (GroupModel group : groups) {
                 user.joinGroup(group);
             }
 
             // Add roles
-            for (RoleModel role: roles) {
+            for (RoleModel role : roles) {
                 user.grantRole(role);
             }
 
@@ -115,7 +118,7 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
                 session.getTransactionManager().setRollbackOnly();
             }
             return ErrorResponse.exists("User exists with same username or email");
-        } catch (ModelException me){
+        } catch (ModelException me) {
             if (session.getTransactionManager().isActive()) {
                 session.getTransactionManager().setRollbackOnly();
             }
@@ -145,20 +148,20 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
 
     /**
      * Get users
-     *
+     * <p>
      * Returns a list of users, filtered according to query parameters.
      * Differs from the standard getUsers by being able to filter on groups or roles
      * Adding multiple groups or multiple roles returns a union of all users that fit those groups or roles
      * Adding multiple groups and multiple roles will give the intersection of users that belong both to the the specified groups and the specified roles
      * If either groups or roles are specified in the call, paging with "first" and/or "max" is impossible, and trying will return a 501.
      *
-     * @param groups A list of group Ids
-     * @param roles A list of realm role names
-     * @param last A user's last name
-     * @param first A user's first name
-     * @param email A user's email
-     * @param username A user's username
-     * @param first Pagination offset
+     * @param groups     A list of group Ids
+     * @param roles      A list of realm role names
+     * @param last       A user's last name
+     * @param first      A user's first name
+     * @param email      A user's email
+     * @param username   A user's username
+     * @param first      Pagination offset
      * @param maxResults Maximum results size (defaults to 100)
      * @return A list of users corresponding to the searched parameters
      */
