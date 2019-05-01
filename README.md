@@ -19,6 +19,11 @@ mvn clean package
 ./install.sh <KEYCLOAK_HOME>
 ```
 
+Add the following to the launch parameters of Keycloak:
+```
+-Dkeycloak.profile.feature.account_api=enabled
+```
+
 ## Usage
 
 To call the REST first get an access token as described in 
