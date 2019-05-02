@@ -76,3 +76,17 @@ curl \
   "http://localhost:8080/auth/realms/master/api/admin/realms/{realm}/users?roleName=role1&roleName=role2&groupId=group1&groupId=group2
 ```
 This will search the intersection of users with groups `group1` or `group2` and of users with roles `role1` and `role2`
+
+### User creation with Groups and Roles
+
+To create a user with a specific group and role
+```
+curl \
+  -H "Authorization: bearer eyJhbGciOiJSUz..." \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d '{ "email": "toto@toto.com", "username": "toto", "realmRoles": ["010b904b-f052-4f4c-a3f1-4b14da3a3448"], "groups": ["dc1689ff-ece8-4b34-bc31-66ea9b254290", "c322b499-0e32-4d42-a76d-a832b4fbb2f9"]}' \
+   http://localhost:8080/auth/realms/master/api/admin/realms/master/users
+```
+
+The user will be created with roles and groups assigned.
