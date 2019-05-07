@@ -77,14 +77,14 @@ public class UsersResourceTest extends ApiTest {
     @Test
     public void testGetUsersWithRole() throws IOException, URISyntaxException {
         List<NameValuePair> nvps = new ArrayList<>();
-        nvps.add(new BasicNameValuePair("roleName", "user"));
+        nvps.add(new BasicNameValuePair("roleId", "user"));
         UserRepresentation[] users = mapper.readValue(callApi("admin/realms/test/users", nvps), UserRepresentation[].class);
         assertThat(users, arrayWithSize(5));
         assertThat(Arrays.stream(users).map(UserRepresentation::getUsername).toArray(),
                 arrayContainingInAnyOrder("non-duplicate-email-user","topgroupuser2"
                         ,"keycloak-user@localhost", "john-doh@localhost", "test-user@localhost"));
 
-        nvps.add(new BasicNameValuePair("roleName", "offline_access"));
+        nvps.add(new BasicNameValuePair("roleId", "offline_access"));
         users = mapper.readValue(callApi("admin/realms/test/users", nvps), UserRepresentation[].class);
         assertThat(users, arrayWithSize(6));
         assertThat(Arrays.stream(users).map(UserRepresentation::getUsername).toArray(),
@@ -95,14 +95,14 @@ public class UsersResourceTest extends ApiTest {
     @Test
     public void testGetUsersWithGroupAndRole() throws IOException, URISyntaxException {
         List<NameValuePair> nvps = new ArrayList<>();
-        nvps.add(new BasicNameValuePair("roleName", "user"));
+        nvps.add(new BasicNameValuePair("roleId", "user"));
         nvps.add(new BasicNameValuePair("groupId", testRealm.groups().groups("topGroup", null, null).get(0).getId()));
         UserRepresentation[] users = mapper.readValue(callApi("admin/realms/test/users", nvps), UserRepresentation[].class);
         assertThat(users, arrayWithSize(1));
         assertThat(Arrays.stream(users).map(UserRepresentation::getUsername).toArray(),
                 arrayContainingInAnyOrder("topgroupuser2"));
 
-        nvps.add(new BasicNameValuePair("roleName", "offline_access"));
+        nvps.add(new BasicNameValuePair("roleId", "offline_access"));
         users = mapper.readValue(callApi("admin/realms/test/users", nvps), UserRepresentation[].class);
         assertThat(users, arrayWithSize(2));
         assertThat(Arrays.stream(users).map(UserRepresentation::getUsername).toArray(),
@@ -120,7 +120,7 @@ public class UsersResourceTest extends ApiTest {
     @Test
     public void testGetUsersWithNonExistingRole() throws IOException, URISyntaxException {
         List<NameValuePair> nvps = new ArrayList<>();
-        nvps.add(new BasicNameValuePair("roleName", "123"));
+        nvps.add(new BasicNameValuePair("roleId", "123"));
         UserRepresentation[] users = mapper.readValue(callApi("admin/realms/test/users", nvps), UserRepresentation[].class);
         assertThat(users, arrayWithSize(0));
     }
@@ -148,7 +148,7 @@ public class UsersResourceTest extends ApiTest {
     @Test
     public void testGestUsersWithRoleAndFirst() throws IOException, URISyntaxException {
         List<NameValuePair> nvps = new ArrayList<>();
-        nvps.add(new BasicNameValuePair("roleName", "offline_access"));
+        nvps.add(new BasicNameValuePair("roleId", "offline_access"));
         nvps.add(new BasicNameValuePair("first", "0"));
         thrown.expect(HttpResponseException.class);
         thrown.expectMessage(containsString("501"));
@@ -158,11 +158,32 @@ public class UsersResourceTest extends ApiTest {
     @Test
     public void testGestUsersWithRoleAndMax() throws IOException, URISyntaxException {
         List<NameValuePair> nvps = new ArrayList<>();
-        nvps.add(new BasicNameValuePair("roleName", "offline_access"));
+        nvps.add(new BasicNameValuePair("roleId", "offline_access"));
         nvps.add(new BasicNameValuePair("max", "10"));
         thrown.expect(HttpResponseException.class);
         thrown.expectMessage(containsString("501"));
         mapper.readValue(callApi("admin/realms/test/users", nvps), UserRepresentation[].class);
+    }
+
+    @Test
+    public void testGestUsersWithGroupAndSearch() throws IOException, URISyntaxException {
+        List<NameValuePair> nvps = new ArrayList<>();
+        nvps.add(new BasicNameValuePair("groupId",  testRealm.groups().groups("topGroup", null, null).get(0).getId()));
+        nvps.add(new BasicNameValuePair("search", "topgroupuser2"));
+        UserRepresentation[] users = mapper.readValue(callApi("admin/realms/test/users", nvps), UserRepresentation[].class);
+        assertThat(users, arrayWithSize(1));
+        assertThat(Arrays.stream(users).map(UserRepresentation::getUsername).toArray(),
+                arrayContainingInAnyOrder("topgroupuser2"));
+    }
+
+    @Test
+    public void testGestUsersWithSearch() throws IOException, URISyntaxException {
+        List<NameValuePair> nvps = new ArrayList<>();
+        nvps.add(new BasicNameValuePair("search", "topgroupuser"));
+        UserRepresentation[] users = mapper.readValue(callApi("admin/realms/test/users", nvps), UserRepresentation[].class);
+        assertThat(users, arrayWithSize(2));
+        assertThat(Arrays.stream(users).map(UserRepresentation::getUsername).toArray(),
+                arrayContainingInAnyOrder("topgroupuser", "topgroupuser2"));
     }
 
 }

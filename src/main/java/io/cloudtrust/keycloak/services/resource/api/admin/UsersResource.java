@@ -169,7 +169,8 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
     @NoCache
     @Produces(MediaType.APPLICATION_JSON)
     public List<UserRepresentation> getUsers(@QueryParam("groupId") List<String> groups,
-                                             @QueryParam("roleName") List<String> roles,
+                                             @QueryParam("roleId") List<String> roles,
+                                             @QueryParam("search") String search,
                                              @QueryParam("lastName") String last,
                                              @QueryParam("firstName") String first,
                                              @QueryParam("email") String email,
@@ -180,27 +181,31 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
         auth.users().requireView();
         RealmModel realm = session.getContext().getRealm();
         if (roles == null || roles.isEmpty() && (groups == null || groups.isEmpty())) {
-            return getUsers(null, last, first, email, username, firstResult, maxResults, briefRepresentation);
+            return getUsers(search, last, first, email, username, firstResult, maxResults, briefRepresentation);
         }
+
         if (firstResult != null || maxResults != null) {
             throw new NotImplementedException();
         }
+        
         // for the next call, we replace maxResults by INT_MAX, thus avoiding to filter out users, and have less that
         // 100 results even if more than 100 results should be returned (maxResults is not supported with groups / roles)
         // reason: we filter out results after having fetched them from the DB.
-        List<UserRepresentation> tempUsers = getUsers(null, last, first, email, username, firstResult, Integer.MAX_VALUE, briefRepresentation);
+        List<UserRepresentation> tempUsers = getUsers(search, last, first, email, username, firstResult, Integer.MAX_VALUE, briefRepresentation);
         Set<String> usersWithGroup = new HashSet<>();
         if (groups != null && !groups.isEmpty()) {
             this.auth.groups().requireView();
             groups.stream().filter(group -> realm.getGroupById(group) != null).flatMap(group -> session.users().getGroupMembers(realm, realm.getGroupById(group)).stream()).forEach(user -> usersWithGroup.add(user.getId()));
             tempUsers = tempUsers.stream().filter(user -> usersWithGroup.contains(user.getId())).collect(Collectors.toList());
         }
+
         Set<String> usersWithRole = new HashSet<>();
         if (roles != null && !roles.isEmpty()) {
             auth.roles().requireView(session.getContext().getRealm());
             roles.stream().filter(role -> realm.getRole(role) != null).flatMap(role -> session.users().getRoleMembers(realm, realm.getRole(role)).stream()).forEach(user -> usersWithRole.add(user.getId()));
             tempUsers = tempUsers.stream().filter(user -> usersWithRole.contains(user.getId())).collect(Collectors.toList());
         }
+
         return tempUsers;
     }
 }
