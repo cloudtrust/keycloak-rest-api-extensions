@@ -202,7 +202,7 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
         Set<String> usersWithRole = new HashSet<>();
         if (roles != null && !roles.isEmpty()) {
             auth.roles().requireView(session.getContext().getRealm());
-            roles.stream().filter(role -> realm.getRole(role) != null).flatMap(role -> session.users().getRoleMembers(realm, realm.getRole(role)).stream()).forEach(user -> usersWithRole.add(user.getId()));
+            roles.stream().filter(role -> realm.getRoleById(role) != null).flatMap(role -> session.users().getRoleMembers(realm, realm.getRoleById(role)).stream()).forEach(user -> usersWithRole.add(user.getId()));
             tempUsers = tempUsers.stream().filter(user -> usersWithRole.contains(user.getId())).collect(Collectors.toList());
         }
 
