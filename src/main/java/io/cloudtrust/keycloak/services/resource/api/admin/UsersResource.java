@@ -162,7 +162,7 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
      * @param email      A user's email
      * @param username   A user's username
      * @param first      Pagination offset
-     * @param maxResults Maximum results size (defaults to 100)
+     * @param maxResults Maximum results size (defaults to 100) - only taken into account if no group / role is defined
      * @return A list of users corresponding to the searched parameters
      */
     @GET
@@ -185,7 +185,10 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
         if (firstResult != null || maxResults != null) {
             throw new NotImplementedException();
         }
-        List<UserRepresentation> tempUsers = getUsers(null, last, first, email, username, firstResult, maxResults, briefRepresentation);
+        // for the next call, we replace maxResults by INT_MAX, thus avoiding to filter out users, and have less that
+        // 100 results even if more than 100 results should be returned (maxResults is not supported with groups / roles)
+        // reason: we filter out results after having fetched them from the DB.
+        List<UserRepresentation> tempUsers = getUsers(null, last, first, email, username, firstResult, Integer.MAX_VALUE, briefRepresentation);
         Set<String> usersWithGroup = new HashSet<>();
         if (groups != null && !groups.isEmpty()) {
             this.auth.groups().requireView();
