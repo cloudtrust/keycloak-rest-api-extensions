@@ -46,6 +46,7 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
+    @Override
     public Response createUser(final UserRepresentation rep) {
         // Security checks
         auth.users().requireManage();
@@ -132,6 +133,7 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
      * @return
      */
     @Path("{id}")
+    @Override
     public org.keycloak.services.resources.admin.UserResource user(final @PathParam("id") String id) {
         UserModel user = session.users().getUserById(id, realm);
         if (user == null) {
