@@ -1,5 +1,6 @@
 package io.cloudtrust.keycloak.services.resource.api.admin;
 
+import io.cloudtrust.keycloak.representations.idm.UsersPageRepresentation;
 import io.cloudtrust.keycloak.services.NotImplementedException;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
@@ -163,12 +164,12 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
      * @param username   A user's username
      * @param first      Pagination offset
      * @param maxResults Maximum results size (defaults to 100) - only taken into account if no group / role is defined
-     * @return A list of users corresponding to the searched parameters
+     * @return A list of users corresponding to the searched parameters, as well as the total count of users
      */
     @GET
     @NoCache
     @Produces(MediaType.APPLICATION_JSON)
-    public List<UserRepresentation> getUsers(@QueryParam("groupId") List<String> groups,
+    public UsersPageRepresentation getUsers(@QueryParam("groupId") List<String> groups,
                                              @QueryParam("roleId") List<String> roles,
                                              @QueryParam("search") String search,
                                              @QueryParam("lastName") String last,
@@ -180,18 +181,11 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
                                              @QueryParam("briefRepresentation") Boolean briefRepresentation) {
         auth.users().requireView();
         RealmModel realm = session.getContext().getRealm();
-        if (roles == null || roles.isEmpty() && (groups == null || groups.isEmpty())) {
-            return getUsers(search, last, first, email, username, firstResult, maxResults, briefRepresentation);
-        }
 
-        if (firstResult != null || maxResults != null) {
-            throw new NotImplementedException();
-        }
-        
-        // for the next call, we replace maxResults by INT_MAX, thus avoiding to filter out users, and have less that
-        // 100 results even if more than 100 results should be returned (maxResults is not supported with groups / roles)
-        // reason: we filter out results after having fetched them from the DB.
-        List<UserRepresentation> tempUsers = getUsers(search, last, first, email, username, firstResult, Integer.MAX_VALUE, briefRepresentation);
+        // for the next call, we set firstResults to 0 and maxResults to INT_MAX for two reasons :
+        // - We want to know the total count of results
+        // - We want to have "max" results, even after group/role filtering
+        List<UserRepresentation> tempUsers = getUsers(search, last, first, email, username, 0, Integer.MAX_VALUE, briefRepresentation);
         Set<String> usersWithGroup = new HashSet<>();
         if (groups != null && !groups.isEmpty()) {
             this.auth.groups().requireView();
@@ -206,6 +200,13 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
             tempUsers = tempUsers.stream().filter(user -> usersWithRole.contains(user.getId())).collect(Collectors.toList());
         }
 
-        return tempUsers;
+        // We paginate our results
+        int totalCount = tempUsers.size();
+        if (firstResult != null && maxResults != null) {
+            tempUsers = tempUsers.subList(firstResult, Math.min(firstResult + maxResults, totalCount));
+        }
+
+        return new UsersPageRepresentation(tempUsers, totalCount);
     }
+
 }
