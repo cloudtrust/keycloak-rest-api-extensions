@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.cloudtrust.keycloak.ApiTest;
 import io.cloudtrust.keycloak.representations.idm.UsersPageRepresentation;
 import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpResponseException;
 import org.apache.http.message.BasicNameValuePair;
 import org.junit.Rule;
 import org.junit.Test;

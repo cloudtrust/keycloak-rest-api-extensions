@@ -1,16 +1,13 @@
 package io.cloudtrust.keycloak.services.resource.api.admin;
 
 import io.cloudtrust.keycloak.representations.idm.UsersPageRepresentation;
-import io.cloudtrust.keycloak.services.NotImplementedException;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
 import org.keycloak.models.*;
-import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.models.utils.RepresentationToModel;
-import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.ForbiddenException;
