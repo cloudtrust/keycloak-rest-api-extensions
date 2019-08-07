@@ -6,7 +6,13 @@ import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
-import org.keycloak.models.*;
+import org.keycloak.models.GroupModel;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.ModelDuplicateException;
+import org.keycloak.models.ModelException;
+import org.keycloak.models.RealmModel;
+import org.keycloak.models.RoleModel;
+import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.RepresentationToModel;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.services.ErrorResponse;
@@ -14,7 +20,14 @@ import org.keycloak.services.ForbiddenException;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.NotFoundException;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.POST;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.*;
@@ -59,7 +72,7 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
                 GroupModel group = session.realms().getGroupById(groupId, realm);
 
                 if (group == null) {
-                    throw new org.jboss.resteasy.spi.NotFoundException("Group not found");
+                    throw new NotFoundException("Group not found");
                 }
 
                 auth.groups().requireManageMembership(group);
@@ -72,7 +85,7 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
                 RoleModel role = realm.getRoleById(roleId);
 
                 if (role == null) {
-                    throw new org.jboss.resteasy.spi.NotFoundException("Role not found");
+                    throw new NotFoundException("Role not found");
                 }
 
                 auth.roles().requireMapRole(role);

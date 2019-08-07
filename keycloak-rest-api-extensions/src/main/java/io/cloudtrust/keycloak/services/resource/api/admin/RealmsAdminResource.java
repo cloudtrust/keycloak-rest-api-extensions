@@ -1,6 +1,5 @@
 package io.cloudtrust.keycloak.services.resource.api.admin;
 
-import org.jboss.resteasy.spi.NotFoundException;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
@@ -12,6 +11,7 @@ import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 import org.keycloak.services.resources.admin.permissions.AdminPermissions;
 
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
@@ -33,6 +33,7 @@ public class RealmsAdminResource extends org.keycloak.services.resources.admin.R
      * @return
      */
     @Path("{realm}")
+    @Override
     public org.keycloak.services.resources.admin.RealmAdminResource getRealmAdmin(@Context final HttpHeaders headers,
                                                                                   @PathParam("realm") final String name) {
         RealmManager realmManager = new RealmManager(session);
