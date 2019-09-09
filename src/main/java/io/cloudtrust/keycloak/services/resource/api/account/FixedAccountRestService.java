@@ -4,24 +4,22 @@ import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.HttpResponse;
 import org.keycloak.common.Profile;
-import org.keycloak.events.Details;
 import org.keycloak.events.EventBuilder;
 import org.keycloak.events.EventType;
-import org.keycloak.events.admin.OperationType;
 import org.keycloak.models.*;
 import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.managers.Auth;
-import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.services.resources.Cors;
 import org.keycloak.services.resources.account.AccountCredentialResource;
 import org.keycloak.services.resources.account.AccountRestService;
-import org.keycloak.services.resources.admin.AdminEventBuilder;
 
-import javax.ws.rs.*;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.NotFoundException;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.List;
 
 /**
  * This is a copy of org.keycloak.services.resources.account.AccountRestService that fixes a bug with CORS
@@ -86,7 +84,7 @@ public class FixedAccountRestService extends AccountRestService {
                     .detail("ct_event_type", "SELF_DELETE_ACCOUNT_ERROR")
                     .detail("username", user.getUsername())
                     .success();
-           return ErrorResponse.error("User couldn't be deleted", Response.Status.BAD_REQUEST);
+            return ErrorResponse.error("User couldn't be deleted", Response.Status.BAD_REQUEST);
         }
     }
 
