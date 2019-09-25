@@ -8,7 +8,7 @@ This module implementents extensions to keycloak's REST API. Currently implement
   * gets users filtered by group or by role
 * account : Fix a bug with CORS
 
-Currently works under keycloak 6.0.1
+Currently works under keycloak 7.0.0 multi-token fork
 
 ## Installation
 

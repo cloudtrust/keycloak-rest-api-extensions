@@ -23,11 +23,4 @@ public class UserResource extends org.keycloak.services.resources.admin.UserReso
         this.adminEvent = adminEvent.resource(ResourceType.USER);
     }
 
-    @Path("credentials")
-    public CredentialsResource credentials() {
-        CredentialsResource resource = new CredentialsResource(session, user, auth, adminEvent);
-        ResteasyProviderFactory.getInstance().injectProperties(resource);
-        return resource;
-    }
-
 }
