@@ -28,4 +28,10 @@ public class RealmAdminResource extends org.keycloak.services.resources.admin.Re
         return users;
     }
 
+    @Path("statistics")
+    public StatisticsResource statistics() {
+        StatisticsResource statistics = new StatisticsResource(session, auth);
+        return statistics;
+    }
+
 }
