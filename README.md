@@ -6,6 +6,8 @@ This module implementents extensions to keycloak's REST API. Currently implement
   * gets a list of users credentials
   * delete a credential
   * gets users filtered by group or by role
+  * get user statistics
+  * get credentials statistics
 * account : Fix a bug with CORS
 
 Currently works under keycloak 7.0.0 multi-token fork
@@ -90,3 +92,19 @@ curl \
 ```
 
 The user will be created with roles and groups assigned.
+
+### Statistics
+
+To get the users statistics
+```
+curl \
+  -H "Authorization: bearer eyJhbGciOiJSUz..." \
+  "http://localhost:8080/auth/realms/master/api/admin/realms/{realm}/statistics/users
+```
+
+To get the credentials statistics
+```
+curl \
+  -H "Authorization: bearer eyJhbGciOiJSUz..." \
+  "http://localhost:8080/auth/realms/master/api/admin/realms/{realm}/statistics/credentials
+```
