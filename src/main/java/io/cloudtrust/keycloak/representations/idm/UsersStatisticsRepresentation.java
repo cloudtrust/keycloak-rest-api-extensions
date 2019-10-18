@@ -2,9 +2,9 @@ package io.cloudtrust.keycloak.representations.idm;
 
 public class UsersStatisticsRepresentation {
 
-    private int total;
-    private int inactive;
-    private int blocked;
+    private long total;
+    private long disabled;
+    private long inactive;
 
     /**
      * For unserializing
@@ -12,33 +12,32 @@ public class UsersStatisticsRepresentation {
     protected UsersStatisticsRepresentation() {
     }
 
-    public UsersStatisticsRepresentation(int total, int inactive, int blocked) {
+    public UsersStatisticsRepresentation(long total, long disabled, long inactive) {
         this.total = total;
+        this.disabled = disabled;
         this.inactive = inactive;
-        this.blocked = blocked;
     }
 
-    public int getTotal() {
-        return total;
-    }
+    public long getTotal() { return total; }
 
-    public void setTotal(int total) {
+    public void setTotal(long total) {
         this.total = total;
     }
 
-    public int getInactive() {
+    public long getDisabled() {
+        return disabled;
+    }
+
+    public void setDisabled(long disabled) {
+        this.disabled = disabled;
+    }
+
+    public long getInactive() {
         return inactive;
     }
 
-    public void setInactive(int inactive) {
+    public void setInactive(long inactive) {
         this.inactive = inactive;
     }
 
-    public int getBlocked() {
-        return blocked;
-    }
-
-    public void setBlocked(int blocked) {
-        this.blocked = blocked;
-    }
 }
