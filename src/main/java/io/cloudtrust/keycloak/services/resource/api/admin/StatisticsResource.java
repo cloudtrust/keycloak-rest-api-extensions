@@ -15,6 +15,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class StatisticsResource {
 
@@ -62,10 +63,18 @@ public class StatisticsResource {
     @Produces(MediaType.APPLICATION_JSON)
     public CredentialsStatisticsRepresentation getCredentialsStatistics() {
         auth.users().requireView();
+
+        List<UserModel> users = session.users().getUsers(realm, true);
+
         CredentialsStatisticsRepresentation asr = new CredentialsStatisticsRepresentation();
-        asr.put("otp", 8);
-        asr.put("ctopt", 2);
-        asr.put("ctpapercard", 2);
+        users.stream()
+                // We grab all the credentials in the system
+                .flatMap(userModel -> session.userCredentialManager().getStoredCredentials(realm, userModel).stream())
+                // We group them by type
+                .collect(Collectors.groupingBy(credentialModel -> credentialModel.getType()))
+                // We fill the statistics with the count
+                .forEach((type, credentials) ->  asr.put(type, credentials.size()));
+
         return asr;
     }
 
