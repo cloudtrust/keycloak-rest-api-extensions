@@ -40,8 +40,7 @@ public class UsersResourceTest extends ApiTest {
 
     @Test
     public void testPaginatedGetUsers() throws IOException, URISyntaxException {
-
-        // *Assumption* : The users are sorted alphabetically by username (seems to always be the case from my experience)
+        // The users are sorted alphabetically by username (sorted in GetUsersQuery)
 
         // Page 1
         List<NameValuePair> nvps = new ArrayList<>();

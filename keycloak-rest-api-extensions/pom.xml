@@ -19,6 +19,7 @@
 
         <!-- Versions, aligned with keycloak 6.0.1.Final -->
         <keycloak.version>${project.version}</keycloak.version>
+        <persistence-api.version>2.2</persistence-api.version>
         <guava.version>25.0-jre</guava.version>
         <jackson.version>2.9.9</jackson.version>
         <junit.version>4.12</junit.version>
@@ -54,6 +55,16 @@
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-jaxrs</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-model-jpa</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.persistence</groupId>
+            <artifactId>javax.persistence-api</artifactId>
+            <version>${persistence-api.version}</version>
         </dependency>
     </dependencies>
 

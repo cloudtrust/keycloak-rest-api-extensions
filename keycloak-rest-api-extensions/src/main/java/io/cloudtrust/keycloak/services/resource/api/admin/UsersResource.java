@@ -13,25 +13,29 @@ import org.keycloak.models.ModelException;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.models.utils.RepresentationToModel;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.ForbiddenException;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
+import org.keycloak.services.resources.admin.permissions.UserPermissionEvaluator;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.POST;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 public class UsersResource extends org.keycloak.services.resources.admin.UsersResource {
 
@@ -150,7 +154,7 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
     public org.keycloak.services.resources.admin.UserResource user(final @PathParam("id") String id) {
         UserModel user = session.users().getUserById(id, realm);
         if (user == null) {
-            // we do this to make sure somebody can't phish ids
+            // we do this to make sure nobody can phish ids
             if (auth.users().canQuery()) throw new NotFoundException("User not found");
             else throw new ForbiddenException();
         }
@@ -170,6 +174,8 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
      *
      * @param groups     A list of group Ids
      * @param roles      A list of realm role names
+     * @param search     A special search field: when used, all other search fields are ignored. Can be something like id:abcd-efg-123
+     *                   or a string which can be contained in the first+last name, email or username
      * @param last       A user's last name
      * @param first      A user's first name
      * @param email      A user's email
@@ -182,43 +188,55 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
     @NoCache
     @Produces(MediaType.APPLICATION_JSON)
     public UsersPageRepresentation getUsers(@QueryParam("groupId") List<String> groups,
-                                             @QueryParam("roleId") List<String> roles,
-                                             @QueryParam("search") String search,
-                                             @QueryParam("lastName") String last,
-                                             @QueryParam("firstName") String first,
-                                             @QueryParam("email") String email,
-                                             @QueryParam("username") String username,
-                                             @QueryParam("first") Integer firstResult,
-                                             @QueryParam("max") Integer maxResults,
-                                             @QueryParam("briefRepresentation") Boolean briefRepresentation) {
-        auth.users().requireView();
-        RealmModel realm = session.getContext().getRealm();
+                                            @QueryParam("roleId") List<String> roles,
+                                            @QueryParam("search") String search,
+                                            @QueryParam("lastName") String last,
+                                            @QueryParam("firstName") String first,
+                                            @QueryParam("email") String email,
+                                            @QueryParam("username") String username,
+                                            @QueryParam("first") Integer firstResult,
+                                            @QueryParam("max") Integer maxResults,
+                                            @QueryParam("briefRepresentation") Boolean briefRepresentation) {
+        GetUsersQuery qry = new GetUsersQuery(session, auth);
 
-        // for the next call, we set firstResults to 0 and maxResults to INT_MAX for two reasons :
-        // - We want to know the total count of results
-        // - We want to have "max" results, even after group/role filtering
-        List<UserRepresentation> tempUsers = getUsers(search, last, first, email, username, 0, Integer.MAX_VALUE, briefRepresentation);
-        Set<String> usersWithGroup = new HashSet<>();
-        if (groups != null && !groups.isEmpty()) {
-            this.auth.groups().requireView();
-            groups.stream().filter(group -> realm.getGroupById(group) != null).flatMap(group -> session.users().getGroupMembers(realm, realm.getGroupById(group)).stream()).forEach(user -> usersWithGroup.add(user.getId()));
-            tempUsers = tempUsers.stream().filter(user -> usersWithGroup.contains(user.getId())).collect(Collectors.toList());
+        if (search != null && !search.isEmpty()) {
+            qry.addPredicateSearchGlobal(search);
+        } else {
+            qry.addPredicateSearchFields(last, first, email, username);
         }
 
-        Set<String> usersWithRole = new HashSet<>();
-        if (roles != null && !roles.isEmpty()) {
-            auth.roles().requireView(session.getContext().getRealm());
-            roles.stream().filter(role -> realm.getRoleById(role) != null).flatMap(role -> session.users().getRoleMembers(realm, realm.getRoleById(role)).stream()).forEach(user -> usersWithRole.add(user.getId()));
-            tempUsers = tempUsers.stream().filter(user -> usersWithRole.contains(user.getId())).collect(Collectors.toList());
-        }
+        qry.addPredicateForGroups(groups);
+        qry.addPredicateForRoles(roles);
 
-        // We paginate our results
-        int totalCount = tempUsers.size();
-        if (firstResult != null && maxResults != null) {
-            tempUsers = tempUsers.subList(firstResult, Math.min(firstResult + maxResults, totalCount));
-        }
+        qry.applyPredicates();
 
-        return new UsersPageRepresentation(tempUsers, totalCount);
+        int count = qry.getTotalCount();
+        List<UserModel> results = qry.execute(firstResult, maxResults);
+        return new UsersPageRepresentation(toRepresentation(realm, auth.users(), briefRepresentation, results), count);
     }
 
+    /**
+     * Source: keycloak-services/src/main/java/org.keycloak.services.resources.admin.UsersResource
+     */
+    private List<UserRepresentation> toRepresentation(RealmModel realm, UserPermissionEvaluator usersEvaluator, Boolean briefRepresentation, List<UserModel> userModels) {
+        boolean briefRepresentationB = briefRepresentation != null && briefRepresentation;
+        List<UserRepresentation> results = new ArrayList<>();
+        boolean canViewGlobal = usersEvaluator.canView();
+
+        usersEvaluator.grantIfNoPermission(session.getAttribute(UserModel.GROUPS) != null);
+
+        for (UserModel user : userModels) {
+            if (!canViewGlobal) {
+                if (!usersEvaluator.canView(user)) {
+                    continue;
+                }
+            }
+            UserRepresentation userRep = briefRepresentationB
+                    ? ModelToRepresentation.toBriefRepresentation(user)
+                    : ModelToRepresentation.toRepresentation(session, realm, user);
+            userRep.setAccess(usersEvaluator.getAccess(user));
+            results.add(userRep);
+        }
+        return results;
+    }
 }
