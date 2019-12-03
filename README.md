@@ -18,7 +18,7 @@ Requires java 8 and maven 3.X
 
 ```
 mvn clean package
-./install.sh <KEYCLOAK_HOME>
+keycloak-rest-api-extensions/install.sh <KEYCLOAK_HOME>
 ```
 
 Add the following to the launch parameters of Keycloak:
