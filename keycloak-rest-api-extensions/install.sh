@@ -74,7 +74,7 @@ init()
     echo $CONF_FILE
     MODULE_NAME=$(xmlstarlet sel -N oe="urn:jboss:module:1.3" -t -v '/oe:module/@name' -n $MODULE_DIR/module.xml)
     MODULE=${MODULE_NAME##*.}
-    JAR_PATH=`find ${TARGET_DIR} -type f -name "*.jar" -not -name "*sources.jar"`
+    JAR_PATH=`find ${TARGET_DIR} -type f -name "*.jar" -not -name "*sources.jar" | grep -v "archive-tmp"`
     JAR_NAME=`basename $JAR_PATH`
     MODULE_PATH=${MODULE_NAME//./\/}/main
 

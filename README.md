@@ -10,7 +10,7 @@ This module implementents extensions to keycloak's REST API. Currently implement
   * get credentials statistics
 * account : Fix a bug with CORS
 
-Currently works under keycloak 7.0.0 multi-token fork
+Currently works under keycloak 8.0.1
 
 ## Installation
 
