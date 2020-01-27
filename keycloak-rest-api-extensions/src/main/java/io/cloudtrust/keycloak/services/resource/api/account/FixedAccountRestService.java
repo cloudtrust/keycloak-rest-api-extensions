@@ -10,7 +10,6 @@ import org.keycloak.models.*;
 import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.managers.Auth;
 import org.keycloak.services.resources.Cors;
-import org.keycloak.services.resources.account.AccountCredentialResource;
 import org.keycloak.services.resources.account.AccountRestService;
 
 import javax.ws.rs.DELETE;
@@ -48,12 +47,12 @@ public class FixedAccountRestService extends AccountRestService {
     }
 
     @Path("/credentials")
-    public AccountCredentialResource credentials(@Context final HttpRequest request, @Context HttpResponse response) {
+    public FixedAccountCredentialResource credentials(@Context final HttpRequest request, @Context HttpResponse response) {
         Cors.add(request).allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().build(response);
         if (!Profile.isFeatureEnabled(Profile.Feature.ACCOUNT_API)) {
             throw new NotFoundException();
         }
-        return new AccountCredentialResource(session, event, user, auth);
+        return new FixedAccountCredentialResource(session, event, user, auth);
     }
 
     /**
