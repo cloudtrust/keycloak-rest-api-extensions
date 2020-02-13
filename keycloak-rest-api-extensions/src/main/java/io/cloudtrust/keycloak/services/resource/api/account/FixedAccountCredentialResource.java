@@ -74,6 +74,7 @@ public class FixedAccountCredentialResource {
         auth.requireOneOf(AccountRoles.MANAGE_ACCOUNT, AccountRoles.VIEW_PROFILE);
 
         return session.getContext().getRealm().getRequiredActionProviders().stream()
+                .filter(RequiredActionProviderModel::isEnabled)
                 .map(RequiredActionProviderModel::getProviderId)
                 .filter(providerId ->  session.getProvider(RequiredActionProvider.class, providerId) instanceof CredentialRegistrator)
                 .collect(Collectors.toList());
