@@ -78,9 +78,9 @@ public class GetUsersQuery {
 
     /**
      * Add predicates to search users by first name, last name, email and username
-     * @param last Searched last name
-     * @param first Searched first name
-     * @param email Searched email
+     * @param last     Searched last name
+     * @param first    Searched first name
+     * @param email    Searched email
      * @param username Searched username
      */
     public void addPredicateSearchFields(String last, String first, String email, String username) {
@@ -89,7 +89,7 @@ public class GetUsersQuery {
         addPredicateLike(userEntityRoot.get(UserModel.FIRST_NAME), first);
         addPredicateLike(userEntityRoot.get(UserModel.EMAIL), email);
         addPredicateLike(userEntityRoot.get(UserModel.USERNAME), username);
-        boolean includeServiceAccount = predicates.size()!=count;
+        boolean includeServiceAccount = predicates.size() != count;
         session.setAttribute(UserModel.INCLUDE_SERVICE_ACCOUNT, includeServiceAccount);
         if (!includeServiceAccount) {
             predicates.add(userEntityRoot.get("serviceAccountClientLink").isNull());
@@ -126,7 +126,7 @@ public class GetUsersQuery {
     }
 
     private void addPredicateLike(Expression<String> expr, String value) {
-        if (value!=null && !value.isEmpty()) {
+        if (value != null && !value.isEmpty()) {
             predicates.add(createPredicateLike(expr, value));
         }
     }
@@ -176,16 +176,15 @@ public class GetUsersQuery {
     public List<UserModel> execute(Integer firstResult, Integer maxResults) {
         TypedQuery<UserEntity> query = em.createQuery(userEntityQry);
 
-        if (firstResult != null && firstResult>=0) {
+        if (firstResult != null && firstResult >= 0) {
             query.setFirstResult(firstResult);
         }
 
-        if (maxResults != null && maxResults>=1) {
+        if (maxResults != null && maxResults >= 1) {
             query.setMaxResults(maxResults);
         }
 
         RealmModel realm = session.getContext().getRealm();
-        List<UserModel> results = new ArrayList<>();
         UserProvider users = session.users();
 
         return query.getResultList().stream()

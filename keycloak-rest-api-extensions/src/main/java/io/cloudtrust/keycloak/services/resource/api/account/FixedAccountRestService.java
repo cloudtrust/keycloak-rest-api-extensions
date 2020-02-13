@@ -32,7 +32,6 @@ public class FixedAccountRestService extends AccountRestService {
 
     private UserModel user;
     private RealmModel realm;
-    private EventBuilder adminEvent;
 
     @Context
     private HttpRequest request;

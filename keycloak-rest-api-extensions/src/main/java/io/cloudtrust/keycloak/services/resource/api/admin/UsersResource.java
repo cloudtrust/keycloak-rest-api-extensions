@@ -6,13 +6,7 @@ import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
-import org.keycloak.models.GroupModel;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.ModelDuplicateException;
-import org.keycloak.models.ModelException;
-import org.keycloak.models.RealmModel;
-import org.keycloak.models.RoleModel;
-import org.keycloak.models.UserModel;
+import org.keycloak.models.*;
 import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.models.utils.RepresentationToModel;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -22,14 +16,7 @@ import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 import org.keycloak.services.resources.admin.permissions.UserPermissionEvaluator;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
@@ -68,34 +55,8 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
         // Security checks
         auth.users().requireManage();
 
-        List<GroupModel> groups = new ArrayList<>();
-        List<RoleModel> roles = new ArrayList<>();
-
-        if (rep.getGroups() != null) {
-            for (String groupId : rep.getGroups()) {
-                GroupModel group = session.realms().getGroupById(groupId, realm);
-
-                if (group == null) {
-                    throw new NotFoundException("Group not found");
-                }
-
-                auth.groups().requireManageMembership(group);
-                groups.add(group);
-            }
-        }
-
-        if (rep.getRealmRoles() != null) {
-            for (String roleId : rep.getRealmRoles()) {
-                RoleModel role = realm.getRoleById(roleId);
-
-                if (role == null) {
-                    throw new NotFoundException("Role not found");
-                }
-
-                auth.roles().requireMapRole(role);
-                roles.add(role);
-            }
-        }
+        List<GroupModel> groups = getGroups(rep.getGroups());
+        List<RoleModel> roles = getRoles(rep.getRealmRoles());
 
         // Double-check duplicated username and email here due to federation
         if (session.users().getUserByUsername(rep.getUsername(), realm) != null) {
@@ -141,6 +102,40 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
             logger.warn("Could not create user", me);
             return ErrorResponse.exists("Could not create user");
         }
+    }
+
+    private List<GroupModel> getGroups(List<String> groups) {
+        List<GroupModel> res = new ArrayList<>();
+        if (groups != null) {
+            for (String groupId : groups) {
+                GroupModel group = session.realms().getGroupById(groupId, realm);
+
+                if (group == null) {
+                    throw new NotFoundException("Group not found");
+                }
+
+                auth.groups().requireManageMembership(group);
+                res.add(group);
+            }
+        }
+        return res;
+    }
+
+    private List<RoleModel> getRoles(List<String> roles) {
+        List<RoleModel> res = new ArrayList<>();
+        if (roles != null) {
+            for (String roleId : roles) {
+                RoleModel role = realm.getRoleById(roleId);
+
+                if (role == null) {
+                    throw new NotFoundException("Role not found");
+                }
+
+                auth.roles().requireMapRole(role);
+                res.add(role);
+            }
+        }
+        return res;
     }
 
     /**
@@ -212,13 +207,13 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
 
         int count = qry.getTotalCount();
         List<UserModel> results = qry.execute(firstResult, maxResults);
-        return new UsersPageRepresentation(toRepresentation(realm, auth.users(), briefRepresentation, results), count);
+        return new UsersPageRepresentation(toUserRepresentation(realm, auth.users(), briefRepresentation, results), count);
     }
 
     /**
      * Source: keycloak-services/src/main/java/org.keycloak.services.resources.admin.UsersResource
      */
-    private List<UserRepresentation> toRepresentation(RealmModel realm, UserPermissionEvaluator usersEvaluator, Boolean briefRepresentation, List<UserModel> userModels) {
+    private List<UserRepresentation> toUserRepresentation(RealmModel realm, UserPermissionEvaluator usersEvaluator, Boolean briefRepresentation, List<UserModel> userModels) {
         boolean briefRepresentationB = briefRepresentation != null && briefRepresentation;
         List<UserRepresentation> results = new ArrayList<>();
         boolean canViewGlobal = usersEvaluator.canView();
@@ -226,10 +221,8 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
         usersEvaluator.grantIfNoPermission(session.getAttribute(UserModel.GROUPS) != null);
 
         for (UserModel user : userModels) {
-            if (!canViewGlobal) {
-                if (!usersEvaluator.canView(user)) {
-                    continue;
-                }
+            if (!canViewGlobal && !usersEvaluator.canView(user)) {
+                continue;
             }
             UserRepresentation userRep = briefRepresentationB
                     ? ModelToRepresentation.toBriefRepresentation(user)

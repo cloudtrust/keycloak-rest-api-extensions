@@ -2,26 +2,22 @@ package io.cloudtrust.keycloak.services.resource.api.admin;
 
 import io.cloudtrust.keycloak.representations.idm.CredentialsStatisticsRepresentation;
 import io.cloudtrust.keycloak.representations.idm.UsersStatisticsRepresentation;
-import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
+import org.keycloak.connections.jpa.JpaConnectionProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
-import org.keycloak.models.UserModel;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 
+import javax.persistence.EntityManager;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class StatisticsResource {
-
-    private static final Logger logger = Logger.getLogger(StatisticsResource.class);
-
-    private static List<String> NOT_AUTHENTICATORS = Arrays.asList("password", "password-history");
+    private static final String[] NOT_AUTHENTICATORS = new String[]{"password", "password-history"};
+    private static final String PARAM_REALM = "realmId";
 
     private AdminPermissionEvaluator auth;
     private KeycloakSession session;
@@ -40,42 +36,56 @@ public class StatisticsResource {
     public UsersStatisticsRepresentation getUsersStatistics() {
         auth.users().requireView();
 
-        List<UserModel> users = session.users().getUsers(realm, true);
+        EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
+        UsersStatisticsRepresentation res = getEnabledUsersStatistics(em);
+        long activeUsersCount = getActiveUsersCount(em);
+        res.setInactive(res.getTotal() - activeUsersCount);
 
-        int totalUsersCount = users.size();
-        long disabledUsersCount = users.stream().filter(userModel -> !userModel.isEnabled()).count();
-        long inactiveUsersCount = users
-                .stream()
-                // We only keep users that have no password or password-history credentials
-                .filter(userModel ->
-                        session.userCredentialManager().getStoredCredentials(realm, userModel)
-                                .stream()
-                                .allMatch(cred -> NOT_AUTHENTICATORS.contains(cred.getType()))
-                )
-                .count();
+        return res;
+    }
 
-        return new UsersStatisticsRepresentation(totalUsersCount, disabledUsersCount, inactiveUsersCount);
+    @SuppressWarnings("unchecked")
+    private UsersStatisticsRepresentation getEnabledUsersStatistics(final EntityManager em) {
+        long enabledUsersCount = 0;
+        long disabledUsersCount = 0;
+
+        List<Object[]> result = em.createQuery("select u.enabled, count(*) from UserEntity u where u.realmId=:realmId group by u.enabled")
+                .setParameter(PARAM_REALM, realm.getId()).getResultList();
+        for (Object[] row : result) {
+            if (Boolean.TRUE.equals(row[0])) {
+                enabledUsersCount += (Long) row[1];
+            } else {
+                disabledUsersCount += (Long) row[1];
+            }
+        }
+
+        return new UsersStatisticsRepresentation(enabledUsersCount + disabledUsersCount, disabledUsersCount, 0);
+    }
+
+    @SuppressWarnings("unchecked")
+    private long getActiveUsersCount(EntityManager em) {
+        List<Long> result = em.createQuery("select count(*) from UserEntity u join u.credentials c where u.realmId=:realmId and c.type!=:credType1 and c.type!=:credType2 group by u.id")
+                .setParameter(PARAM_REALM, realm.getId())
+                .setParameter("credType1", NOT_AUTHENTICATORS[0])
+                .setParameter("credType2", NOT_AUTHENTICATORS[1])
+                .getResultList();
+        return result.isEmpty() ? 0 : result.get(0);
     }
 
     @Path("credentials")
     @GET
     @NoCache
     @Produces(MediaType.APPLICATION_JSON)
+    @SuppressWarnings("unchecked")
     public CredentialsStatisticsRepresentation getCredentialsStatistics() {
         auth.users().requireView();
 
-        List<UserModel> users = session.users().getUsers(realm, true);
-
+        EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
         CredentialsStatisticsRepresentation asr = new CredentialsStatisticsRepresentation();
-        users.stream()
-                // We grab all the credentials in the system
-                .flatMap(userModel -> session.userCredentialManager().getStoredCredentials(realm, userModel).stream())
-                // We group them by type
-                .collect(Collectors.groupingBy(credentialModel -> credentialModel.getType()))
-                // We fill the statistics with the count
-                .forEach((type, credentials) ->  asr.put(type, credentials.size()));
+        List<Object[]> result = em.createQuery("select c.type, count(*) from UserEntity u join u.credentials c where u.realmId=:realmId group by c.type")
+                .setParameter(PARAM_REALM, realm.getId()).getResultList();
+        result.forEach(row -> asr.put((String) row[0], (Long) row[1]));
 
         return asr;
     }
-
 }
