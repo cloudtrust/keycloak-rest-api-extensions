@@ -91,7 +91,7 @@ public class FixedAccountCredentialResource {
     public Response removeCredential(final @PathParam("credentialId") String credentialId) {
         auth.require(AccountRoles.MANAGE_ACCOUNT);
 
-        if (session.userCredentialManager().getStoredCredentialById(realm, user, credentialId) == null) {
+        if (!credentialOwnedByUser(realm, user, credentialId)) {
             return Response.status(NOT_FOUND).build();
         }
 
@@ -108,7 +108,7 @@ public class FixedAccountCredentialResource {
     public Response setLabel(final @PathParam("credentialId") String credentialId, String userLabel) {
         auth.require(AccountRoles.MANAGE_ACCOUNT);
 
-        if (session.userCredentialManager().getStoredCredentialById(realm, user, credentialId) == null) {
+        if (!credentialOwnedByUser(realm, user, credentialId)) {
             return Response.status(NOT_FOUND).build();
         }
 
@@ -136,11 +136,11 @@ public class FixedAccountCredentialResource {
     public Response moveCredentialAfter(final @PathParam("credentialId") String credentialId, final @PathParam("newPreviousCredentialId") String newPreviousCredentialId){
         auth.require(AccountRoles.MANAGE_ACCOUNT);
 
-        if (session.userCredentialManager().getStoredCredentialById(realm, user, credentialId) == null) {
+        if (!credentialOwnedByUser(realm, user, credentialId)) {
             return Response.status(NOT_FOUND).build();
         }
 
-        if (newPreviousCredentialId != null && session.userCredentialManager().getStoredCredentialById(realm, user, newPreviousCredentialId) == null) {
+        if (newPreviousCredentialId != null && !credentialOwnedByUser(realm, user, newPreviousCredentialId)) {
             return Response.status(NOT_FOUND).build();
         }
 
@@ -255,5 +255,11 @@ public class FixedAccountCredentialResource {
 
     }
 
-
+    private boolean credentialOwnedByUser(RealmModel realm, UserModel user, String credentialId) {
+        List<CredentialModel> models = session.userCredentialManager().getStoredCredentials(realm, user);
+        if (models.stream().filter( c -> c.getId() == credentialId).count() == 0) {
+            return false;
+        }
+        return true;
+    }
 }
