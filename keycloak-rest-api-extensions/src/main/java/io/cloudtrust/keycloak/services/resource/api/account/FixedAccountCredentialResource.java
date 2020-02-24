@@ -36,6 +36,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+
 /**
  * Copy of {@link org.keycloak.services.resources.account.AccountCredentialResource} with additional resources
  */
@@ -86,9 +88,15 @@ public class FixedAccountCredentialResource {
     @Path("{credentialId}")
     @DELETE
     @NoCache
-    public void removeCredential(final @PathParam("credentialId") String credentialId) {
+    public Response removeCredential(final @PathParam("credentialId") String credentialId) {
         auth.require(AccountRoles.MANAGE_ACCOUNT);
+
+        if (session.userCredentialManager().getStoredCredentialById(realm, user, credentialId) == null) {
+            return Response.status(NOT_FOUND).build();
+        }
+
         session.userCredentialManager().removeStoredCredential(realm, user, credentialId);
+        return Response.ok().build();
     }
 
     /**
@@ -97,9 +105,15 @@ public class FixedAccountCredentialResource {
     @PUT
     @Consumes(javax.ws.rs.core.MediaType.TEXT_PLAIN)
     @Path("{credentialId}/label")
-    public void setLabel(final @PathParam("credentialId") String credentialId, String userLabel) {
+    public Response setLabel(final @PathParam("credentialId") String credentialId, String userLabel) {
         auth.require(AccountRoles.MANAGE_ACCOUNT);
+
+        if (session.userCredentialManager().getStoredCredentialById(realm, user, credentialId) == null) {
+            return Response.status(NOT_FOUND).build();
+        }
+
         session.userCredentialManager().updateCredentialLabel(realm, user, credentialId, userLabel);
+        return Response.ok().build();
     }
 
     /**
@@ -108,8 +122,8 @@ public class FixedAccountCredentialResource {
      */
     @Path("{credentialId}/moveToFirst")
     @POST
-    public void moveToFirst(final @PathParam("credentialId") String credentialId){
-        moveCredentialAfter(credentialId, null);
+    public Response moveToFirst(final @PathParam("credentialId") String credentialId){
+        return moveCredentialAfter(credentialId, null);
     }
 
     /**
@@ -119,9 +133,19 @@ public class FixedAccountCredentialResource {
      */
     @Path("{credentialId}/moveAfter/{newPreviousCredentialId}")
     @POST
-    public void moveCredentialAfter(final @PathParam("credentialId") String credentialId, final @PathParam("newPreviousCredentialId") String newPreviousCredentialId){
+    public Response moveCredentialAfter(final @PathParam("credentialId") String credentialId, final @PathParam("newPreviousCredentialId") String newPreviousCredentialId){
         auth.require(AccountRoles.MANAGE_ACCOUNT);
+
+        if (session.userCredentialManager().getStoredCredentialById(realm, user, credentialId) == null) {
+            return Response.status(NOT_FOUND).build();
+        }
+
+        if (newPreviousCredentialId != null && session.userCredentialManager().getStoredCredentialById(realm, user, newPreviousCredentialId) == null) {
+            return Response.status(NOT_FOUND).build();
+        }
+
         session.userCredentialManager().moveCredentialTo(realm, user, credentialId, newPreviousCredentialId);
+        return Response.ok().build();
     }
 
     @GET
@@ -230,5 +254,6 @@ public class FixedAccountCredentialResource {
         }
 
     }
+
 
 }
