@@ -139,10 +139,6 @@ public class FixedAccountRestService extends AccountRestService {
               .setUser(user)
               .sendExecuteActions(link, TimeUnit.SECONDS.toMinutes(lifespan));
 
-            //audit.user(user).detail(Details.EMAIL, user.getEmail()).detail(Details.CODE_ID, accessCode.getCodeId()).success();
-
-            //adminEvent.operation(OperationType.ACTION).resourcePath(session.getContext().getUri()).success();
-
             return Response.ok().build();
         } catch (EmailException e) {
             ServicesLogger.LOGGER.failedToSendActionsEmail(e);
