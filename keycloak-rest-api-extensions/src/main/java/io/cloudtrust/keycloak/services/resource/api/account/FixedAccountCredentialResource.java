@@ -257,6 +257,6 @@ public class FixedAccountCredentialResource {
 
     private boolean credentialOwnedByUser(RealmModel realm, UserModel user, String credentialId) {
         List<CredentialModel> models = session.userCredentialManager().getStoredCredentials(realm, user);
-        return models.stream().filter( c -> c.getId() == credentialId).count() == 0;
+        return models.stream().filter( c -> c.getId() == credentialId).count() == 1;
     }
 }
