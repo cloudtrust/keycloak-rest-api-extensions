@@ -21,6 +21,7 @@ public class RealmAdminResource extends org.keycloak.services.resources.admin.Re
     }
 
     @Path("users")
+    @Override
     public UsersResource users() {
         UsersResource users = new UsersResource(session, auth, adminEvent);
         ResteasyProviderFactory.getInstance().injectProperties(users);
@@ -30,8 +31,7 @@ public class RealmAdminResource extends org.keycloak.services.resources.admin.Re
 
     @Path("statistics")
     public StatisticsResource statistics() {
-        StatisticsResource statistics = new StatisticsResource(session, auth);
-        return statistics;
+        return new StatisticsResource(session, auth);
     }
 
 }

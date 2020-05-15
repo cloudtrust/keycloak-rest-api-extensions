@@ -30,12 +30,12 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
 
     private AdminPermissionEvaluator auth;
     private AdminEventBuilder adminEvent;
-    private KeycloakSession session;
+    private KeycloakSession kcSession;
 
     public UsersResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         super(session.getContext().getRealm(), auth, adminEvent);
         this.auth = auth;
-        this.session = session;
+        this.kcSession = session;
         this.adminEvent = adminEvent.resource(ResourceType.USER);
     }
 
@@ -59,19 +59,19 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
         List<RoleModel> roles = getRoles(rep.getRealmRoles());
 
         // Double-check duplicated username and email here due to federation
-        if (session.users().getUserByUsername(rep.getUsername(), realm) != null) {
+        if (kcSession.users().getUserByUsername(rep.getUsername(), realm) != null) {
             return ErrorResponse.exists("User exists with same username");
         }
-        if (rep.getEmail() != null && !realm.isDuplicateEmailsAllowed() && session.users().getUserByEmail(rep.getEmail(), realm) != null) {
+        if (rep.getEmail() != null && !realm.isDuplicateEmailsAllowed() && kcSession.users().getUserByEmail(rep.getEmail(), realm) != null) {
             return ErrorResponse.exists("User exists with same email");
         }
 
         try {
-            UserModel user = session.users().addUser(realm, rep.getUsername());
+            UserModel user = kcSession.users().addUser(realm, rep.getUsername());
             Set<String> emptySet = Collections.emptySet();
 
-            org.keycloak.services.resources.admin.UserResource.updateUserFromRep(user, rep, emptySet, realm, session, false);
-            RepresentationToModel.createCredentials(rep, session, realm, user, true);
+            org.keycloak.services.resources.admin.UserResource.updateUserFromRep(user, rep, emptySet, realm, kcSession, false);
+            RepresentationToModel.createCredentials(rep, kcSession, realm, user, true);
 
             // Add groups
             for (GroupModel group : groups) {
@@ -83,21 +83,21 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
                 user.grantRole(role);
             }
 
-            adminEvent.operation(OperationType.CREATE).resourcePath(session.getContext().getUri(), user.getId()).representation(rep).success();
+            adminEvent.operation(OperationType.CREATE).resourcePath(kcSession.getContext().getUri(), user.getId()).representation(rep).success();
 
-            if (session.getTransactionManager().isActive()) {
-                session.getTransactionManager().commit();
+            if (kcSession.getTransactionManager().isActive()) {
+                kcSession.getTransactionManager().commit();
             }
 
-            return Response.created(session.getContext().getUri().getAbsolutePathBuilder().path(user.getId()).build()).build();
+            return Response.created(kcSession.getContext().getUri().getAbsolutePathBuilder().path(user.getId()).build()).build();
         } catch (ModelDuplicateException e) {
-            if (session.getTransactionManager().isActive()) {
-                session.getTransactionManager().setRollbackOnly();
+            if (kcSession.getTransactionManager().isActive()) {
+                kcSession.getTransactionManager().setRollbackOnly();
             }
             return ErrorResponse.exists("User exists with same username or email");
         } catch (ModelException me) {
-            if (session.getTransactionManager().isActive()) {
-                session.getTransactionManager().setRollbackOnly();
+            if (kcSession.getTransactionManager().isActive()) {
+                kcSession.getTransactionManager().setRollbackOnly();
             }
             logger.warn("Could not create user", me);
             return ErrorResponse.exists("Could not create user");
@@ -108,7 +108,7 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
         List<GroupModel> res = new ArrayList<>();
         if (groups != null) {
             for (String groupId : groups) {
-                GroupModel group = session.realms().getGroupById(groupId, realm);
+                GroupModel group = kcSession.realms().getGroupById(groupId, realm);
 
                 if (group == null) {
                     throw new NotFoundException("Group not found");
@@ -147,13 +147,13 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
     @Path("{id}")
     @Override
     public org.keycloak.services.resources.admin.UserResource user(final @PathParam("id") String id) {
-        UserModel user = session.users().getUserById(id, realm);
+        UserModel user = kcSession.users().getUserById(id, realm);
         if (user == null) {
             // we do this to make sure nobody can phish ids
             if (auth.users().canQuery()) throw new NotFoundException("User not found");
             else throw new ForbiddenException();
         }
-        UserResource resource = new UserResource(session, user, auth, adminEvent);
+        UserResource resource = new UserResource(kcSession, user, auth, adminEvent);
         ResteasyProviderFactory.getInstance().injectProperties(resource);
         return resource;
     }
@@ -192,7 +192,7 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
                                             @QueryParam("first") Integer firstResult,
                                             @QueryParam("max") Integer maxResults,
                                             @QueryParam("briefRepresentation") Boolean briefRepresentation) {
-        GetUsersQuery qry = new GetUsersQuery(session, auth);
+        GetUsersQuery qry = new GetUsersQuery(kcSession, auth);
 
         if (search != null && !search.isEmpty()) {
             qry.addPredicateSearchGlobal(search);
@@ -218,7 +218,7 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
         List<UserRepresentation> results = new ArrayList<>();
         boolean canViewGlobal = usersEvaluator.canView();
 
-        usersEvaluator.grantIfNoPermission(session.getAttribute(UserModel.GROUPS) != null);
+        usersEvaluator.grantIfNoPermission(kcSession.getAttribute(UserModel.GROUPS) != null);
 
         for (UserModel user : userModels) {
             if (!canViewGlobal && !usersEvaluator.canView(user)) {
@@ -226,7 +226,7 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
             }
             UserRepresentation userRep = briefRepresentationB
                     ? ModelToRepresentation.toBriefRepresentation(user)
-                    : ModelToRepresentation.toRepresentation(session, realm, user);
+                    : ModelToRepresentation.toRepresentation(kcSession, realm, user);
             userRep.setAccess(usersEvaluator.getAccess(user));
             results.add(userRep);
         }
