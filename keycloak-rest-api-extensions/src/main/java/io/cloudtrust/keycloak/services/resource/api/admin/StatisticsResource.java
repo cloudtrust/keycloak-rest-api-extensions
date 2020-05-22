@@ -13,6 +13,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import java.math.BigInteger;
 import java.util.List;
 
 public class StatisticsResource {
@@ -62,14 +63,20 @@ public class StatisticsResource {
         return new UsersStatisticsRepresentation(enabledUsersCount + disabledUsersCount, disabledUsersCount, 0);
     }
 
+    private static final String QUERY_ACTIVE_USERS_COUNT =
+            "select count(distinct u.id) "
+                    + "from user_entity u "
+                    + "join credential c on u.id=c.user_id and c.type!=:credType1 and c.type!=:credType2 "
+                    + "where u.realm_id=:realmId";
+
     @SuppressWarnings("unchecked")
     private long getActiveUsersCount(EntityManager em) {
-        List<Long> result = em.createQuery("select count(*) from UserEntity u join u.credentials c where u.realmId=:realmId and c.type!=:credType1 and c.type!=:credType2 group by u.id")
+        List<BigInteger> result = em.createNativeQuery(QUERY_ACTIVE_USERS_COUNT)
                 .setParameter(PARAM_REALM, realm.getId())
                 .setParameter("credType1", NOT_AUTHENTICATORS[0])
                 .setParameter("credType2", NOT_AUTHENTICATORS[1])
                 .getResultList();
-        return result.isEmpty() ? 0 : result.get(0);
+        return result.isEmpty() ? 0 : result.get(0).longValue();
     }
 
     @Path("credentials")
