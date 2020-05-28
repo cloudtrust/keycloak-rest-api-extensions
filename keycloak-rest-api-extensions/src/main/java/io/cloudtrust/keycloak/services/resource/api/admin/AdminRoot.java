@@ -9,9 +9,8 @@ import org.keycloak.services.resources.Cors;
 import org.keycloak.services.resources.admin.AdminAuth;
 import org.keycloak.services.resources.admin.AdminCorsPreflightService;
 
-import io.cloudtrust.exception.CloudtrustRuntimeException;
-
 import javax.ws.rs.HttpMethod;
+import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 
@@ -37,7 +36,7 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
 
         AdminAuth auth = authenticateRealmAdminRequest(request.getHttpHeaders());
         if (auth == null) {
-            throw new CloudtrustRuntimeException("Can't get AdminAuth");
+            throw new NotAuthorizedException("Can't get AdminAuth");
         }
 
         logger.debug("authenticated admin access for: " + auth.getUser().getUsername());
