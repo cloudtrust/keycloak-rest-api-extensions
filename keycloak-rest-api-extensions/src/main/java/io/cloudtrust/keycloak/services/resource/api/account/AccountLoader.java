@@ -32,6 +32,7 @@ public class AccountLoader extends org.keycloak.services.resources.account.Accou
 
     private static final Logger logger = Logger.getLogger(org.keycloak.services.resources.account.AccountLoader.class);
 
+    @Override
     public Object getAccountService(KeycloakSession session, EventBuilder event) {
         RealmModel realm = session.getContext().getRealm();
 
@@ -49,7 +50,7 @@ public class AccountLoader extends org.keycloak.services.resources.account.Accou
         Theme theme = getTheme(session);
         boolean deprecatedAccount = isDeprecatedFormsAccountConsole(theme);
 
-        if (request.getHttpMethod().equals(HttpMethod.OPTIONS)) {
+        if (HttpMethod.OPTIONS.equals(request.getHttpMethod())) {
             return new FixedCorsPreflightService(request);
         } else if ((accepts.contains(MediaType.APPLICATION_JSON_TYPE) || MediaType.APPLICATION_JSON_TYPE.equals(content)) && !request.getUri().getPath().endsWith("keycloak.json")) {
             AuthenticationManager.AuthResult authResult = new AppAuthManager().authenticateBearerToken(session);

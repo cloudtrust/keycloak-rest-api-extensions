@@ -10,6 +10,7 @@ import org.keycloak.services.resources.admin.AdminAuth;
 import org.keycloak.services.resources.admin.AdminCorsPreflightService;
 
 import javax.ws.rs.HttpMethod;
+import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 
@@ -29,15 +30,16 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
      */
     @Path("realms")
     public Object getRealmsAdmin(@Context final HttpRequest request, @Context HttpResponse response) {
-        if (request.getHttpMethod().equals(HttpMethod.OPTIONS)) {
+        if (HttpMethod.OPTIONS.equals(request.getHttpMethod())) {
             return new AdminCorsPreflightService(request);
         }
 
         AdminAuth auth = authenticateRealmAdminRequest(request.getHttpHeaders());
-        if (auth != null) {
-            logger.debug("authenticated admin access for: " + auth.getUser().getUsername());
+        if (auth == null) {
+            throw new NotAuthorizedException("Can't get AdminAuth");
         }
 
+        logger.debug("authenticated admin access for: " + auth.getUser().getUsername());
         Cors.add(request).allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().build(response);
 
         org.keycloak.services.resources.admin.RealmsAdminResource adminResource = new RealmsAdminResource(auth, tokenManager, session);

@@ -19,6 +19,6 @@ public class ExtendedAPI implements RealmResourceProvider {
 
     @Override
     public void close() {
-
+        // Nothing to close
     }
 }

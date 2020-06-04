@@ -16,17 +16,17 @@ public class ExtendedAPIFactory implements RealmResourceProviderFactory {
 
     @Override
     public void init(Config.Scope scope) {
-
+        // Nothing to initialize
     }
 
     @Override
     public void postInit(KeycloakSessionFactory keycloakSessionFactory) {
-
+        // Nothing to do
     }
 
     @Override
     public void close() {
-
+        // Nothing to do
     }
 
     @Override

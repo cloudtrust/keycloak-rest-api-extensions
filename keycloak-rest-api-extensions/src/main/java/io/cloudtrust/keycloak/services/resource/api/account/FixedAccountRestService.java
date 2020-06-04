@@ -80,21 +80,21 @@ public class FixedAccountRestService extends AccountRestService {
     public Response deleteAccount() {
         auth.require(AccountRoles.MANAGE_ACCOUNT);
 
-        UserModel user = auth.getUser();
+        UserModel delUser = auth.getUser();
 
-        boolean removed = new UserManager(session).removeUser(realm, user);
+        boolean removed = new UserManager(session).removeUser(realm, delUser);
         if (removed) {
-            event.event(EventType.UPDATE_PROFILE).user(user)
+            event.event(EventType.UPDATE_PROFILE).user(delUser)
                     .client(auth.getClient())
                     .detail("ct_event_type", "SELF_DELETE_ACCOUNT")
-                    .detail("username", user.getUsername())
+                    .detail("username", delUser.getUsername())
                     .success();
             return Cors.add(request, Response.ok()).auth().allowedOrigins(auth.getToken()).build();
         } else {
-            event.event(EventType.UPDATE_PROFILE).user(user)
+            event.event(EventType.UPDATE_PROFILE).user(delUser)
                     .client(auth.getClient())
                     .detail("ct_event_type", "SELF_DELETE_ACCOUNT_ERROR")
-                    .detail("username", user.getUsername())
+                    .detail("username", delUser.getUsername())
                     .success();
             return ErrorResponse.error("User couldn't be deleted", Response.Status.BAD_REQUEST);
         }
