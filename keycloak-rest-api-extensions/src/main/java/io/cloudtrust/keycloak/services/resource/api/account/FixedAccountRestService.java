@@ -1,5 +1,6 @@
 package io.cloudtrust.keycloak.services.resource.api.account;
 
+import org.apache.commons.lang3.StringUtils;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.HttpResponse;
@@ -8,9 +9,11 @@ import org.keycloak.common.Profile;
 import org.keycloak.common.util.Time;
 import org.keycloak.email.EmailException;
 import org.keycloak.email.EmailTemplateProvider;
+import org.keycloak.email.freemarker.beans.ProfileBean;
 import org.keycloak.events.EventBuilder;
 import org.keycloak.events.EventType;
 import org.keycloak.models.*;
+import org.keycloak.models.utils.UserModelDelegate;
 import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.ServicesLogger;
 import org.keycloak.services.managers.Auth;
@@ -18,12 +21,15 @@ import org.keycloak.services.resources.Cors;
 import org.keycloak.services.resources.LoginActionsService;
 import org.keycloak.services.resources.account.AccountRestService;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -143,6 +149,62 @@ public class FixedAccountRestService extends AccountRestService {
         } catch (EmailException e) {
             ServicesLogger.LOGGER.failedToSendActionsEmail(e);
             return ErrorResponse.error("Failed to send execute actions email", Status.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    public static class UserWithOverridenEmail extends UserModelDelegate {
+        private String email;
+
+        public UserWithOverridenEmail(UserModel user, String email) {
+            super(user);
+            this.email = email;
+        }
+
+        @Override
+        public String getEmail() {
+            return StringUtils.defaultIfBlank(email, super.getEmail());
+        }
+    }
+
+    @Path("send-email")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response sendMail(@QueryParam("subject") String subjectFormatKey, @QueryParam("template") String template, @QueryParam("recipient") String recipient, Map<String, String> parameters) {
+        if (StringUtils.isBlank(template)) {
+            return ErrorResponse.error("Template email missing", Status.BAD_REQUEST);
+        }
+        if (StringUtils.isBlank(subjectFormatKey)) {
+            return ErrorResponse.error("Subject missing", Status.BAD_REQUEST);
+        }
+        UserWithOverridenEmail userWithEmail = new UserWithOverridenEmail(user, recipient);
+        if (StringUtils.isBlank(userWithEmail.getEmail())) {
+            return ErrorResponse.error("User email missing", Status.BAD_REQUEST);
+        }
+
+        if (!user.isEnabled()) {
+            throw new WebApplicationException(
+                ErrorResponse.error("User is disabled", Status.BAD_REQUEST));
+        }
+
+        UriBuilder builder = LoginActionsService.loginActionsBaseUrl(session.getContext().getUri()).path(getClass(), "sendMail");
+        String link = builder.build(realm.getName()).toString();
+
+        KeycloakContext context = session.getContext();
+        EmailTemplateProvider emailProvider = session.getProvider(EmailTemplateProvider.class)
+                .setRealm(context.getRealm())
+                .setUser(userWithEmail)
+                .setAuthenticationSession(context.getAuthenticationSession());
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("user", new ProfileBean(user));
+        attributes.put("realmName", realm.getDisplayName());
+        attributes.put("link", link);
+        parameters.forEach(attributes::put);
+
+        try {
+            emailProvider.send(subjectFormatKey, template, attributes);
+            return Response.noContent().build();
+        } catch (EmailException e) {
+            throw new WebApplicationException("Can't send mail to "+userWithEmail.getEmail(), e);
         }
     }
 }
