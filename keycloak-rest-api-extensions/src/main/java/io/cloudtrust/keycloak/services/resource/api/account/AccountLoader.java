@@ -30,7 +30,7 @@ import java.util.List;
  */
 public class AccountLoader extends org.keycloak.services.resources.account.AccountLoader {
 
-    private static final Logger logger = Logger.getLogger(org.keycloak.services.resources.account.AccountLoader.class);
+    private static final Logger logger = Logger.getLogger(AccountLoader.class);
 
     @Override
     public Object getAccountService(KeycloakSession session, EventBuilder event) {
