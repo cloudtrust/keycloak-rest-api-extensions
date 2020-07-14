@@ -64,10 +64,10 @@ public class StatisticsResource {
     }
 
     private static final String QUERY_ACTIVE_USERS_COUNT =
-            "select count(distinct u.id) "
-                    + "from user_entity u "
-                    + "join credential c on u.id=c.user_id and c.type!=:credType1 and c.type!=:credType2 "
-                    + "where u.realm_id=:realmId";
+            "select count(distinct u.ID) "
+                    + "from USER_ENTITY u "
+                    + "join CREDENTIAL c on u.ID=c.USER_ID and c.TYPE!=:credType1 and c.TYPE!=:credType2 "
+                    + "where u.REALM_ID=:realmId";
 
     @SuppressWarnings("unchecked")
     private long getActiveUsersCount(EntityManager em) {
