@@ -26,7 +26,7 @@
         <apache.httpcomponents.version>4.5.2</apache.httpcomponents.version>
         <apache.httpcomponents.httpcore.version>4.4.4</apache.httpcomponents.httpcore.version>
         <jboss.logging.version>3.3.2.Final</jboss.logging.version>
-        <jackson.version>2.9.9</jackson.version>
+        <jackson.version>2.9.10</jackson.version>
         <junit.version>4.12</junit.version>
     </properties>
 
@@ -35,6 +35,11 @@
             <groupId>io.cloudtrust</groupId>
             <artifactId>keycloak-rest-api-extensions</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.cloudtrust</groupId>
+            <artifactId>kc-cloudtrust-test-tools</artifactId>
+            <version>${keycloak.version}</version>
         </dependency>
         <dependency>
             <groupId>org.keycloak.testsuite</groupId>
