@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.cloudtrust</groupId>
         <artifactId>keycloak-rest-api-extensions-parent</artifactId>
-        <version>8.0.1</version>
+        <version>11.0.2</version>
     </parent>
 
     <artifactId>keycloak-rest-api-extensions</artifactId>
@@ -17,7 +17,6 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
-        <!-- Versions, aligned with keycloak 8.0.1.Final -->
         <keycloak.version>${project.version}</keycloak.version>
         <persistence-api.version>2.2</persistence-api.version>
     </properties>
