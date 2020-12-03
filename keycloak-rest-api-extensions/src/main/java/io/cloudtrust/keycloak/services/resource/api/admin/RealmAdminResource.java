@@ -1,13 +1,24 @@
 package io.cloudtrust.keycloak.services.resource.api.admin;
 
+import io.cloudtrust.keycloak.email.EmailSender;
+import io.cloudtrust.keycloak.email.model.EmailModel;
+import org.apache.commons.lang3.StringUtils;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.protocol.oidc.TokenManager;
+import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 public class RealmAdminResource extends org.keycloak.services.resources.admin.RealmAdminResource {
 
@@ -34,4 +45,22 @@ public class RealmAdminResource extends org.keycloak.services.resources.admin.Re
         return new StatisticsResource(session, auth);
     }
 
+    @Path("send-email")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response sendMail(EmailModel emailModel) {
+        auth.users().requireManage();
+
+        if (StringUtils.isBlank(emailModel.getRecipient())) {
+            return ErrorResponse.error("Recipient email missing", Response.Status.BAD_REQUEST);
+        }
+
+        Locale locale = realm.getDefaultLocale() != null ? Locale.forLanguageTag(realm.getDefaultLocale()) : Locale.ENGLISH;
+        Map<String, Object> attributes = new HashMap<>();
+        if (emailModel.getTheming() != null && emailModel.getTheming().getTemplateParameters() != null) {
+            emailModel.getTheming().getTemplateParameters().forEach(attributes::put);
+        }
+
+        return EmailSender.sendMail(this.session, this.realm, emailModel, locale, attributes);
+    }
 }
