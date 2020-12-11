@@ -41,7 +41,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -271,7 +270,7 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
             else throw new ForbiddenException();
         }
 
-        if (emailModel.getRecipient()==null) {
+        if (emailModel.getRecipient() == null) {
             emailModel.setRecipient(user.getEmail());
         }
         if (StringUtils.isBlank(emailModel.getRecipient())) {
@@ -286,7 +285,7 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
         Locale locale = session.getContext().resolveLocale(user);
 
         UriBuilder builder = LoginActionsService.loginActionsBaseUrl(session.getContext().getUri());
-        String link = builder.build(session.getContext().getRealm().getName()).toString();
+        String link = builder.build(session.getContext().getRealm().getName()).toString() + "/";
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("user", new ProfileBean(user));
         attributes.put("realmName", realm.getDisplayName());
