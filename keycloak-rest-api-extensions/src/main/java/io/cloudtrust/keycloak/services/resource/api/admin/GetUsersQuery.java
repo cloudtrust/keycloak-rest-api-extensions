@@ -132,7 +132,8 @@ public class GetUsersQuery {
     }
 
     private Predicate createPredicateLike(Expression<String> expr, String value) {
-        return builder.like(builder.lower(expr), "%" + value.toLowerCase() + "%");
+        String effectiveFilter = value.contains("%") ? value.toLowerCase() : "%" + value.toLowerCase() + "%";
+        return builder.like(builder.lower(expr), effectiveFilter);
     }
 
     private Subquery<?> createGroupsSubQuery(List<String> groups) {

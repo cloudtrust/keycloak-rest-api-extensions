@@ -76,6 +76,23 @@ public class UsersResourceTest extends ApiTest {
         assertThat(page.getCount(), is(1));
     }
 
+    private int countMatchingUsers(String field, String value) throws IOException, URISyntaxException {
+        List<NameValuePair> nvps = new ArrayList<>();
+        nvps.add(new BasicNameValuePair(field, value));
+        UsersPageRepresentation page = queryApi(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
+        UserRepresentation[] users = grabUsers(page);
+        assertThat(users, notNullValue());
+        return users.length;
+    }
+
+    @Test
+    public void testGetUsersWithWildcard() throws IOException, URISyntaxException {
+        assertThat(countMatchingUsers("lastName", "doh"), is(2));
+        assertThat(countMatchingUsers("lastName", "%doh%"), is(2));
+        assertThat(countMatchingUsers("lastName", "doh%"), is(1));
+        assertThat(countMatchingUsers("lastName", "%doh"), is(1));
+    }
+
     @Test
     public void testGetUsersWithGroup() throws IOException, URISyntaxException {
         List<NameValuePair> nvps = new ArrayList<>();

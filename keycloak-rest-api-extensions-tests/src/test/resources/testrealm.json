@@ -89,6 +89,8 @@
       "username" : "keycloak-user@localhost",
       "enabled": true,
       "email" : "keycloak-user@localhost",
+      "firstName": "Jane",
+      "lastName": "Edoha",
       "credentials" : [
         { "type" : "password",
           "value" : "password" }
