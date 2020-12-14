@@ -8,6 +8,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.protocol.oidc.TokenManager;
 import org.keycloak.services.ErrorResponse;
+import org.keycloak.services.resources.LoginActionsService;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 
@@ -16,6 +17,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -56,7 +58,10 @@ public class RealmAdminResource extends org.keycloak.services.resources.admin.Re
         }
 
         Locale locale = realm.getDefaultLocale() != null ? Locale.forLanguageTag(realm.getDefaultLocale()) : Locale.ENGLISH;
+        UriBuilder builder = LoginActionsService.loginActionsBaseUrl(session.getContext().getUri());
+        String link = builder.build(session.getContext().getRealm().getName()).toString() + "/";
         Map<String, Object> attributes = new HashMap<>();
+        attributes.put("link", link);
         if (emailModel.getTheming() != null && emailModel.getTheming().getTemplateParameters() != null) {
             emailModel.getTheming().getTemplateParameters().forEach(attributes::put);
         }
