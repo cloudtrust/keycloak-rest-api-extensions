@@ -59,11 +59,12 @@ public class FixedAccountCredentialResource {
     @GET
     @NoCache
     @Produces(javax.ws.rs.core.MediaType.APPLICATION_JSON)
-    public List<CredentialRepresentation> credentials(){
+    public List<CredentialRepresentation> credentials() {
         auth.requireOneOf(AccountRoles.MANAGE_ACCOUNT, AccountRoles.VIEW_PROFILE);
-        List<CredentialModel> models = session.userCredentialManager().getStoredCredentials(realm, user);
-        models.forEach(c -> c.setSecretData(null));
-        return models.stream().map(ModelToRepresentation::toRepresentation).collect(Collectors.toList());
+        return session.userCredentialManager().getStoredCredentialsStream(realm, user).map(c -> {
+            c.setSecretData(null);
+            return ModelToRepresentation.toRepresentation(c);
+        }).collect(Collectors.toList());
     }
 
 
@@ -71,13 +72,13 @@ public class FixedAccountCredentialResource {
     @Path("registrators")
     @NoCache
     @Produces(javax.ws.rs.core.MediaType.APPLICATION_JSON)
-    public List<String> getCredentialRegistrators(){
+    public List<String> getCredentialRegistrators() {
         auth.requireOneOf(AccountRoles.MANAGE_ACCOUNT, AccountRoles.VIEW_PROFILE);
 
-        return session.getContext().getRealm().getRequiredActionProviders().stream()
+        return session.getContext().getRealm().getRequiredActionProvidersStream()
                 .filter(RequiredActionProviderModel::isEnabled)
                 .map(RequiredActionProviderModel::getProviderId)
-                .filter(providerId ->  session.getProvider(RequiredActionProvider.class, providerId) instanceof CredentialRegistrator)
+                .filter(providerId -> session.getProvider(RequiredActionProvider.class, providerId) instanceof CredentialRegistrator)
                 .collect(Collectors.toList());
     }
 
@@ -90,7 +91,7 @@ public class FixedAccountCredentialResource {
     public Response removeCredential(final @PathParam("credentialId") String credentialId) {
         auth.require(AccountRoles.MANAGE_ACCOUNT);
 
-        if (!credentialOwnedByUser(realm, user, credentialId)) {
+        if (credentialNotOwnedByUser(realm, user, credentialId)) {
             return Response.status(NOT_FOUND).build();
         }
 
@@ -107,7 +108,7 @@ public class FixedAccountCredentialResource {
     public Response setLabel(final @PathParam("credentialId") String credentialId, String userLabel) {
         auth.require(AccountRoles.MANAGE_ACCOUNT);
 
-        if (!credentialOwnedByUser(realm, user, credentialId)) {
+        if (credentialNotOwnedByUser(realm, user, credentialId)) {
             return Response.status(NOT_FOUND).build();
         }
 
@@ -117,29 +118,31 @@ public class FixedAccountCredentialResource {
 
     /**
      * Move a credential to the first position
+     *
      * @param credentialId The credential to move
      */
     @Path("{credentialId}/moveToFirst")
     @POST
-    public Response moveToFirst(final @PathParam("credentialId") String credentialId){
+    public Response moveToFirst(final @PathParam("credentialId") String credentialId) {
         return moveCredentialAfter(credentialId, null);
     }
 
     /**
      * Move a credential to a position behind another credential
-     * @param credentialId The credential to move
+     *
+     * @param credentialId            The credential to move
      * @param newPreviousCredentialId The credential that will be the previous element in the list. If set to null, the moved credential will be the first element in the list.
      */
     @Path("{credentialId}/moveAfter/{newPreviousCredentialId}")
     @POST
-    public Response moveCredentialAfter(final @PathParam("credentialId") String credentialId, final @PathParam("newPreviousCredentialId") String newPreviousCredentialId){
+    public Response moveCredentialAfter(final @PathParam("credentialId") String credentialId, final @PathParam("newPreviousCredentialId") String newPreviousCredentialId) {
         auth.require(AccountRoles.MANAGE_ACCOUNT);
 
-        if (!credentialOwnedByUser(realm, user, credentialId)) {
+        if (credentialNotOwnedByUser(realm, user, credentialId)) {
             return Response.status(NOT_FOUND).build();
         }
 
-        if (newPreviousCredentialId != null && !credentialOwnedByUser(realm, user, newPreviousCredentialId)) {
+        if (newPreviousCredentialId != null && credentialNotOwnedByUser(realm, user, newPreviousCredentialId)) {
             return Response.status(NOT_FOUND).build();
         }
 
@@ -152,7 +155,7 @@ public class FixedAccountCredentialResource {
     @Produces(MediaType.APPLICATION_JSON)
     public PasswordDetails passwordDetails() {
         auth.requireOneOf(AccountRoles.MANAGE_ACCOUNT, AccountRoles.VIEW_PROFILE);
-        
+
         PasswordCredentialProvider passwordProvider = (PasswordCredentialProvider) session.getProvider(CredentialProvider.class, PasswordCredentialProviderFactory.PROVIDER_ID);
         CredentialModel password = passwordProvider.getPassword(realm, user);
 
@@ -180,11 +183,11 @@ public class FixedAccountCredentialResource {
             event.error(org.keycloak.events.Errors.INVALID_USER_CREDENTIALS);
             return ErrorResponse.error(Messages.INVALID_PASSWORD_EXISTING, Response.Status.BAD_REQUEST);
         }
-        
+
         if (update.getNewPassword() == null) {
             return ErrorResponse.error(Messages.INVALID_PASSWORD_EXISTING, Response.Status.BAD_REQUEST);
         }
-        
+
         String confirmation = update.getConfirmation();
         if ((confirmation != null) && !update.getNewPassword().equals(confirmation)) {
             return ErrorResponse.error(Messages.NOTMATCH_PASSWORD, Response.Status.BAD_REQUEST);
@@ -243,7 +246,7 @@ public class FixedAccountCredentialResource {
         public void setNewPassword(String newPassword) {
             this.newPassword = newPassword;
         }
-        
+
         public String getConfirmation() {
             return confirmation;
         }
@@ -254,8 +257,7 @@ public class FixedAccountCredentialResource {
 
     }
 
-    private boolean credentialOwnedByUser(RealmModel realm, UserModel user, String credentialId) {
-        List<CredentialModel> models = session.userCredentialManager().getStoredCredentials(realm, user);
-        return models.stream().filter( c -> c.getId().equals(credentialId)).count() == 1;
+    private boolean credentialNotOwnedByUser(RealmModel realm, UserModel user, String credentialId) {
+        return session.userCredentialManager().getStoredCredentialsStream(realm, user).filter(c -> c.getId().equals(credentialId)).count() != 1;
     }
 }

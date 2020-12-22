@@ -4,9 +4,7 @@ import io.cloudtrust.keycloak.test.ApiTest;
 import io.cloudtrust.keycloak.representations.idm.UsersPageRepresentation;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.keycloak.representations.idm.UserRepresentation;
 
 import java.io.IOException;
@@ -15,13 +13,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.arrayContaining;
+import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
+import static org.hamcrest.Matchers.arrayWithSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 public class UsersResourceTest extends ApiTest {
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
     private static final String getMethod = "GET";
 
     @Test

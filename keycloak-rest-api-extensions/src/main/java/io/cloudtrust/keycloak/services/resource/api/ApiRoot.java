@@ -32,7 +32,7 @@ public class ApiRoot {
     public Object getAccountApiRoot(final @PathParam("realm") String name) {
         RealmModel realm = init(name);
         EventBuilder event = new EventBuilder(realm, session, session.getContext().getConnection());
-        return new AccountLoader().getAccountService(session, event);
+        return new AccountLoader(session, event).getAccountService();
     }
 
     private RealmModel init(String realmName) {
