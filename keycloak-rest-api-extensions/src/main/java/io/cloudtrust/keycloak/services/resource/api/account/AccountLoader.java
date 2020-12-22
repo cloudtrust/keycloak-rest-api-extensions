@@ -29,11 +29,19 @@ import java.util.List;
  * It redirects class CorsPreflightService and AccountRestService to our fixed versions.
  */
 public class AccountLoader extends org.keycloak.services.resources.account.AccountLoader {
-
     private static final Logger logger = Logger.getLogger(AccountLoader.class);
 
+    private KeycloakSession session;
+    private EventBuilder event;
+
+    public AccountLoader(KeycloakSession session, EventBuilder event) {
+        super(session, event);
+        this.session = session;
+        this.event = event;
+    }
+
     @Override
-    public Object getAccountService(KeycloakSession session, EventBuilder event) {
+    public Object getAccountService() {
         RealmModel realm = session.getContext().getRealm();
 
         ClientModel client = realm.getClientByClientId(Constants.ACCOUNT_MANAGEMENT_CLIENT_ID);
@@ -47,13 +55,17 @@ public class AccountLoader extends org.keycloak.services.resources.account.Accou
         MediaType content = headers.getMediaType();
         List<MediaType> accepts = headers.getAcceptableMediaTypes();
 
-        Theme theme = getTheme(session);
+        Theme theme = getTheme();
         boolean deprecatedAccount = isDeprecatedFormsAccountConsole(theme);
 
         if (HttpMethod.OPTIONS.equals(request.getHttpMethod())) {
             return new FixedCorsPreflightService(request);
         } else if ((accepts.contains(MediaType.APPLICATION_JSON_TYPE) || MediaType.APPLICATION_JSON_TYPE.equals(content)) && !request.getUri().getPath().endsWith("keycloak.json")) {
-            AuthenticationManager.AuthResult authResult = new AppAuthManager().authenticateBearerToken(session);
+            AppAuthManager.BearerTokenAuthenticator bearerAuthenticator = new AppAuthManager.BearerTokenAuthenticator(session);
+            AuthenticationManager.AuthResult authResult = bearerAuthenticator
+                    .setConnection(session.getContext().getConnection())
+                    .setHeaders(headers)
+                    .authenticate();
             if (authResult == null) {
                 throw new NotAuthorizedException("Bearer token required");
             }
@@ -78,7 +90,7 @@ public class AccountLoader extends org.keycloak.services.resources.account.Accou
         }
     }
 
-    private Theme getTheme(KeycloakSession session) {
+    private Theme getTheme() {
         try {
             return session.theme().getTheme(Theme.Type.ACCOUNT);
         } catch (IOException e) {

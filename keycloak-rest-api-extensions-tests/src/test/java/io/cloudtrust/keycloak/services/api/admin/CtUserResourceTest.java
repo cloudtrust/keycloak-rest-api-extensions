@@ -20,11 +20,11 @@ import java.io.StringWriter;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
 
 public class CtUserResourceTest extends ApiTest {
     private static GreenMail greenMail;
@@ -76,9 +76,10 @@ public class CtUserResourceTest extends ApiTest {
     }
 
     @Test
-    public void sendExecuteActionsEmailUseOtherRealmThemeFailureTest() throws IOException, URISyntaxException {
-        // dummy1 is configured with a non-existing theme. It makes the processing fail with an internal server error
-        failureCase("?themeRealm=dummy1", 500);
+    public void sendExecuteActionsEmailUseOtherRealmThemeFailureTest() throws IOException, URISyntaxException, MessagingException {
+        // dummy1 is configured with a non-existing theme. It was making the processing fail with an internal server error
+        // Between 8.0.1 and 13.0.0, Keycloak loads a default theme if provided theme is an invalid one
+        successCase("?themeRealm=dummy1");
     }
 
     @Test
