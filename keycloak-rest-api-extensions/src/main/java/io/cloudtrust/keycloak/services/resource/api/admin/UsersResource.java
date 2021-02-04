@@ -1,13 +1,9 @@
 package io.cloudtrust.keycloak.services.resource.api.admin;
 
-import io.cloudtrust.keycloak.email.EmailSender;
-import io.cloudtrust.keycloak.email.model.EmailModel;
 import io.cloudtrust.keycloak.representations.idm.UsersPageRepresentation;
-import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
-import org.keycloak.email.freemarker.beans.ProfileBean;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
 import org.keycloak.models.GroupModel;
@@ -22,9 +18,7 @@ import org.keycloak.models.utils.RepresentationToModel;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.ForbiddenException;
-import org.keycloak.services.resources.LoginActionsService;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
-import org.keycloak.services.resources.admin.UserResource;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 import org.keycloak.services.resources.admin.permissions.UserPermissionEvaluator;
 
@@ -36,17 +30,11 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 
 public class UsersResource extends org.keycloak.services.resources.admin.UsersResource {
@@ -170,14 +158,14 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
      */
     @Path("{id}")
     @Override
-    public org.keycloak.services.resources.admin.UserResource user(final @PathParam("id") String id) {
+    public CtUserResource user(final @PathParam("id") String id) {
         UserModel user = kcSession.users().getUserById(id, realm);
         if (user == null) {
             // we do this to make sure nobody can phish ids
             if (auth.users().canQuery()) throw new NotFoundException("User not found");
             else throw new ForbiddenException();
         }
-        UserResource resource = new UserResource(kcSession.getContext().getRealm(), user, auth, adminEvent);
+        CtUserResource resource = new CtUserResource(kcSession, user, auth, adminEvent);
         ResteasyProviderFactory.getInstance().injectProperties(resource);
         return resource;
     }
@@ -255,45 +243,5 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
             results.add(userRep);
         }
         return results;
-    }
-
-    @Path("{id}/send-email")
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response sendMail(final @PathParam("id") String id, EmailModel emailModel) {
-        auth.users().requireManage();
-
-        UserModel user = kcSession.users().getUserById(id, realm);
-        if (user == null) {
-            // we do this to make sure nobody can phish ids
-            if (auth.users().canQuery()) throw new NotFoundException("User not found");
-            else throw new ForbiddenException();
-        }
-
-        if (emailModel.getRecipient() == null) {
-            emailModel.setRecipient(user.getEmail());
-        }
-        if (StringUtils.isBlank(emailModel.getRecipient())) {
-            return ErrorResponse.error("User email missing", Status.BAD_REQUEST);
-        }
-
-        if (!user.isEnabled()) {
-            throw new WebApplicationException(
-                    ErrorResponse.error("User is disabled", Status.BAD_REQUEST));
-        }
-
-        Locale locale = session.getContext().resolveLocale(user);
-
-        UriBuilder builder = LoginActionsService.loginActionsBaseUrl(session.getContext().getUri());
-        String link = builder.build(session.getContext().getRealm().getName()).toString() + "/";
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put("user", new ProfileBean(user));
-        attributes.put("realmName", realm.getDisplayName());
-        attributes.put("link", link);
-        if (emailModel.getTheming().getTemplateParameters() != null) {
-            emailModel.getTheming().getTemplateParameters().forEach(attributes::put);
-        }
-
-        return EmailSender.sendMail(kcSession, realm, emailModel, locale, attributes);
     }
 }
