@@ -47,6 +47,11 @@
             <version>${keycloak.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.icegreen</groupId>
+            <artifactId>greenmail</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
