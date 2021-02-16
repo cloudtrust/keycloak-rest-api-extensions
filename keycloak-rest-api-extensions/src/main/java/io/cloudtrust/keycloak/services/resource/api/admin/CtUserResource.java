@@ -2,6 +2,7 @@ package io.cloudtrust.keycloak.services.resource.api.admin;
 
 import io.cloudtrust.keycloak.email.EmailSender;
 import io.cloudtrust.keycloak.email.model.EmailModel;
+import io.cloudtrust.keycloak.email.model.RealmWithOverridenEmailTheme;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 import org.keycloak.authentication.actiontoken.execactions.ExecuteActionsActionToken;
@@ -160,7 +161,9 @@ public class CtUserResource extends UserResource {
                 return ErrorResponse.error("Invalid realm name", Response.Status.BAD_REQUEST);
             }
             if (themeRealm.getEmailTheme() != null) {
-                realm.setEmailTheme(themeRealm.getEmailTheme());
+                RealmWithOverridenEmailTheme overridenRealm = new RealmWithOverridenEmailTheme(realm);
+                overridenRealm.setEmailTheme(themeRealm.getEmailTheme());
+                session.getContext().setRealm(overridenRealm);
             }
         }
 
@@ -188,6 +191,8 @@ public class CtUserResource extends UserResource {
         } catch (EmailException e) {
             ServicesLogger.LOGGER.failedToSendActionsEmail(e);
             return ErrorResponse.error("Failed to send execute actions email", Response.Status.INTERNAL_SERVER_ERROR);
+        } finally {
+            session.getContext().setRealm(realm);
         }
     }
 }
