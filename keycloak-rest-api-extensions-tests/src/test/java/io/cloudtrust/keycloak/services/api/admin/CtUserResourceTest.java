@@ -1,15 +1,17 @@
 package io.cloudtrust.keycloak.services.api.admin;
 
+import com.icegreen.greenmail.util.GreenMail;
+import com.icegreen.greenmail.util.ServerSetupTest;
 import io.cloudtrust.keycloak.test.ApiTest;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.HttpResponseException;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.keycloak.representations.idm.RealmRepresentation;
-import org.keycloak.testsuite.util.GreenMailRule;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
@@ -25,11 +27,21 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 public class CtUserResourceTest extends ApiTest {
-    @Rule
-    public final GreenMailRule greenMail = new GreenMailRule();
+    private static GreenMail greenMail;
 
     private static final String[] ACTIONS = new String[]{"VERIFY_EMAIL"};
     private static final String EXECUTE_ACTIONS_EMAIL_FMT = "/realms/master/api/admin/realms/test/users/%s/execute-actions-email";
+
+    @BeforeClass
+    public static void setupGreenMail() {
+        greenMail = new GreenMail(ServerSetupTest.SMTP);
+        greenMail.start();
+    }
+
+    @AfterClass
+    public static void shutdownGreenMail() {
+        greenMail.stop();
+    }
 
     @Before
     public void createDummyRealms() {
@@ -82,7 +94,7 @@ public class CtUserResourceTest extends ApiTest {
 
         callApiJSON("PUT", path + queryParams, ACTIONS);
         assertThat(greenMail.getReceivedMessages().length, is(nbReceived + 1));
-        MimeMessage mail = greenMail.getLastReceivedMessage();
+        MimeMessage mail = greenMail.getReceivedMessages()[nbReceived];
         assertThat(mail, is(not(nullValue())));
         String mailContent = getMailContent(mail);
         assertThat(mailContent, containsString("Verify Email"));

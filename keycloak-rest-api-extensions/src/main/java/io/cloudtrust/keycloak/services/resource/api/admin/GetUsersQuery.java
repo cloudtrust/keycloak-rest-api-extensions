@@ -132,6 +132,9 @@ public class GetUsersQuery {
     }
 
     private Predicate createPredicateLike(Expression<String> expr, String value) {
+        if (value.startsWith("=") && value.length()>1) {
+            return builder.equal(builder.lower(expr), value.substring(1));
+        }
         String effectiveFilter = value.contains("%") ? value.toLowerCase() : "%" + value.toLowerCase() + "%";
         return builder.like(builder.lower(expr), effectiveFilter);
     }

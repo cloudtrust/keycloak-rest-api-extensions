@@ -88,9 +88,11 @@ public class UsersResourceTest extends ApiTest {
     @Test
     public void testGetUsersWithWildcard() throws IOException, URISyntaxException {
         assertThat(countMatchingUsers("lastName", "doh"), is(2));
-        assertThat(countMatchingUsers("lastName", "%doh%"), is(2));
+        assertThat(countMatchingUsers("lastName", "%do%"), is(2));
         assertThat(countMatchingUsers("lastName", "doh%"), is(1));
         assertThat(countMatchingUsers("lastName", "%doh"), is(1));
+        assertThat(countMatchingUsers("lastName", "=do"), is(0));
+        assertThat(countMatchingUsers("lastName", "=doh"), is(1));
     }
 
     @Test
