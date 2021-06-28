@@ -7,6 +7,7 @@ import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.HttpResponse;
 import org.keycloak.authentication.actiontoken.execactions.ExecuteActionsActionToken;
 import org.keycloak.common.Profile;
+import org.keycloak.common.enums.AccountRestApiVersion;
 import org.keycloak.common.util.Time;
 import org.keycloak.email.EmailException;
 import org.keycloak.email.EmailTemplateProvider;
@@ -63,7 +64,7 @@ public class FixedAccountRestService extends AccountRestService {
     private HttpRequest request;
 
     public FixedAccountRestService(KeycloakSession session, Auth auth, ClientModel client, EventBuilder event) {
-        super(session, auth, client, event);
+        super(session, auth, client, event, AccountRestApiVersion.V1_ALPHA1);
         this.session = session;
         this.auth = auth;
         this.event = event;
@@ -83,7 +84,7 @@ public class FixedAccountRestService extends AccountRestService {
     /**
      * Delete account
      *
-     * @return
+     * @return REST response
      */
     @Path("/")
     @DELETE
@@ -115,9 +116,6 @@ public class FixedAccountRestService extends AccountRestService {
     /**
      * Send execute actions email
      *
-     * @param lifespan
-     * @param actions
-     * @return
      */
     @Path("execute-actions-email")
     @PUT

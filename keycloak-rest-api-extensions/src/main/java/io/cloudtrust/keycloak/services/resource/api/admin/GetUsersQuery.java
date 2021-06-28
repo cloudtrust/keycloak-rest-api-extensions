@@ -144,7 +144,7 @@ public class GetUsersQuery {
         Root<UserGroupMembershipEntity> userGroupMembership = ugmSubquery.from(UserGroupMembershipEntity.class);
         return ugmSubquery
                 .select(userGroupMembership.get("user").get("id"))
-                .where(userGroupMembership.get("group").get("id").in(groups));
+                .where(userGroupMembership.get("groupId").in(groups));
     }
 
     private Subquery<?> createRolesSubQuery(List<String> roles) {
@@ -192,7 +192,7 @@ public class GetUsersQuery {
         UserProvider users = session.users();
 
         return query.getResultList().stream()
-                .map(entity -> users.getUserById(entity.getId(), realm))
+                .map(entity -> users.getUserById(realm, entity.getId()))
                 .collect(Collectors.toList());
     }
 }
