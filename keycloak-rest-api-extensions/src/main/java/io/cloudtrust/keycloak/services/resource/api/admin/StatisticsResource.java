@@ -12,6 +12,7 @@ import javax.persistence.EntityManager;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.math.BigInteger;
 import java.util.List;
@@ -92,6 +93,52 @@ public class StatisticsResource {
         List<Object[]> result = em.createQuery("select c.type, count(*) from UserEntity u join u.credentials c where u.realmId=:realmId group by c.type")
                 .setParameter(PARAM_REALM, realm.getId()).getResultList();
         result.forEach(row -> asr.put((String) row[0], (Long) row[1]));
+
+        return asr;
+    }
+
+    private static final String QUERY_ONBOARDING_STATISTICS =
+            "select sum(stats.shadow) shadow, sum(stats.email_verified) email_verified, sum(stats.phone_verified) phone_verified," +
+                    "       sum(stats.otp) otp, sum(stats.shadow)-sum(stats.inactivated) activated " +
+                    "from (select 1 shadow," +
+                    "        CASE WHEN utrust.EMAIL_VERIFIED is not null THEN 1 ELSE 0 END email_verified," +
+                    "        CASE WHEN uphone.VALUE is not null THEN 1 ELSE 0 END phone_verified," +
+                    "        CASE WHEN cotp.ID is not null THEN 1 ELSE 0 END otp," +
+                    "        CASE WHEN cact.ID is not null THEN 1 ELSE 0 END inactivated " +
+                    "from USER_ENTITY ushad " +
+                    "left outer join USER_ENTITY utrust ON utrust.USERNAME=ushad.USERNAME AND utrust.REALM_ID=:socialRealmId " +
+                    "left outer join USER_ATTRIBUTE uphone ON uphone.USER_ID=utrust.ID AND uphone.NAME='phoneNumberVerified' AND uphone.VALUE='true' " +
+                    "left outer join CREDENTIAL cotp ON cotp.USER_ID=utrust.ID AND cotp.TYPE='ctotp' " +
+                    "left outer join CREDENTIAL cact ON cact.USER_ID=ushad.ID AND cact.TYPE='activationcode' " +
+                    "where ushad.REALM_ID=:clientRealmId " +
+                    "  and ushad.CREATED_TIMESTAMP BETWEEN :dateFrom AND :dateTo " +
+                    "group by ushad.ID, utrust.EMAIL_VERIFIED, uphone.VALUE, cotp.ID, cact.ID) stats";
+    private static final String[] ONBOARDING_STATISTICS_RESULTS = new String[]{
+            "invitedUsers", "verifiedEmails", "verifiedPhones", "secondFactors", "activatedAccounts"
+    };
+
+    @Path("onboarding")
+    @GET
+    @NoCache
+    @Produces(MediaType.APPLICATION_JSON)
+    @SuppressWarnings("unchecked")
+    public CredentialsStatisticsRepresentation getOnboardingStatistics(@QueryParam("socialRealmId") String socialRealmId, @QueryParam("dateFrom") Long dateFrom, @QueryParam("dateTo") Long dateTo) {
+        auth.users().requireView();
+
+        EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
+        CredentialsStatisticsRepresentation asr = new CredentialsStatisticsRepresentation();
+        em.createNativeQuery(QUERY_ONBOARDING_STATISTICS)
+                .setParameter("socialRealmId", socialRealmId)
+                .setParameter("clientRealmId", realm.getId())
+                .setParameter("dateFrom", dateFrom)
+                .setParameter("dateTo", dateTo)
+                .getResultStream()
+                .forEach(res -> {
+                    Object[] values = (Object[]) res;
+                    for (int idx = 0; idx < ONBOARDING_STATISTICS_RESULTS.length; idx++) {
+                        asr.put(ONBOARDING_STATISTICS_RESULTS[idx], ((BigInteger) values[idx]).longValue());
+                    }
+                });
 
         return asr;
     }
