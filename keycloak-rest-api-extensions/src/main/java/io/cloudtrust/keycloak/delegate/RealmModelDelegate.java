@@ -5,11 +5,14 @@ import org.keycloak.component.ComponentModel;
 import org.keycloak.models.AuthenticationExecutionModel;
 import org.keycloak.models.AuthenticationFlowModel;
 import org.keycloak.models.AuthenticatorConfigModel;
+import org.keycloak.models.CibaConfig;
+import org.keycloak.models.ClientInitialAccessModel;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.ClientScopeModel;
 import org.keycloak.models.GroupModel;
 import org.keycloak.models.IdentityProviderMapperModel;
 import org.keycloak.models.IdentityProviderModel;
+import org.keycloak.models.OAuth2DeviceConfig;
 import org.keycloak.models.OTPPolicy;
 import org.keycloak.models.PasswordPolicy;
 import org.keycloak.models.RealmModel;
@@ -18,9 +21,9 @@ import org.keycloak.models.RequiredCredentialModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.models.WebAuthnPolicy;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public class RealmModelDelegate implements RealmModel {
     private RealmModel delegate;
@@ -55,26 +58,34 @@ public class RealmModelDelegate implements RealmModel {
     }
 
     @Override
-    public Set<RoleModel> getRoles() {
-        return delegate.getRoles();
+    public Stream<RoleModel> getRolesStream() {
+        return delegate.getRolesStream();
     }
 
     @Override
-    public List<String> getDefaultRoles() {
-        return delegate.getDefaultRoles();
+    public Stream<RoleModel> getRolesStream(Integer firstResult, Integer maxResults) {
+        return delegate.getRolesStream(firstResult, maxResults);
     }
 
     @Override
+    public Stream<RoleModel> searchForRolesStream(String search, Integer first, Integer max) {
+        return null;
+    }
+
+    @Override
+    @Deprecated
+    public Stream<String> getDefaultRolesStream() {
+        return delegate.getDefaultRolesStream();
+    }
+
+    @Override
+    @Deprecated
     public void addDefaultRole(String name) {
         delegate.addDefaultRole(name);
     }
 
     @Override
-    public void updateDefaultRoles(String... defaultRoles) {
-        delegate.updateDefaultRoles(defaultRoles);
-    }
-
-    @Override
+    @Deprecated
     public void removeDefaultRoles(String... defaultRoles) {
         delegate.removeDefaultRoles(defaultRoles);
     }
@@ -535,11 +546,6 @@ public class RealmModelDelegate implements RealmModel {
     }
 
     @Override
-    public List<RequiredCredentialModel> getRequiredCredentials() {
-        return delegate.getRequiredCredentials();
-    }
-
-    @Override
     public void addRequiredCredential(String cred) {
         delegate.addRequiredCredential(cred);
     }
@@ -580,11 +586,6 @@ public class RealmModelDelegate implements RealmModel {
     }
 
     @Override
-    public List<GroupModel> getDefaultGroups() {
-        return delegate.getDefaultGroups();
-    }
-
-    @Override
     public void addDefaultGroup(GroupModel group) {
         delegate.addDefaultGroup(group);
     }
@@ -592,11 +593,6 @@ public class RealmModelDelegate implements RealmModel {
     @Override
     public void removeDefaultGroup(GroupModel group) {
         delegate.removeDefaultGroup(group);
-    }
-
-    @Override
-    public List<ClientModel> getClients() {
-        return delegate.getClients();
     }
 
     @Override
@@ -710,11 +706,6 @@ public class RealmModelDelegate implements RealmModel {
     }
 
     @Override
-    public List<AuthenticationFlowModel> getAuthenticationFlows() {
-        return delegate.getAuthenticationFlows();
-    }
-
-    @Override
     public AuthenticationFlowModel getFlowByAlias(String alias) {
         return delegate.getFlowByAlias(alias);
     }
@@ -737,11 +728,6 @@ public class RealmModelDelegate implements RealmModel {
     @Override
     public void updateAuthenticationFlow(AuthenticationFlowModel model) {
         delegate.updateAuthenticationFlow(model);
-    }
-
-    @Override
-    public List<AuthenticationExecutionModel> getAuthenticationExecutions(String flowId) {
-        return delegate.getAuthenticationExecutions(flowId);
     }
 
     @Override
@@ -770,11 +756,6 @@ public class RealmModelDelegate implements RealmModel {
     }
 
     @Override
-    public List<AuthenticatorConfigModel> getAuthenticatorConfigs() {
-        return delegate.getAuthenticatorConfigs();
-    }
-
-    @Override
     public AuthenticatorConfigModel addAuthenticatorConfig(AuthenticatorConfigModel model) {
         return delegate.addAuthenticatorConfig(model);
     }
@@ -797,11 +778,6 @@ public class RealmModelDelegate implements RealmModel {
     @Override
     public AuthenticatorConfigModel getAuthenticatorConfigByAlias(String alias) {
         return delegate.getAuthenticatorConfigByAlias(alias);
-    }
-
-    @Override
-    public List<RequiredActionProviderModel> getRequiredActionProviders() {
-        return delegate.getRequiredActionProviders();
     }
 
     @Override
@@ -830,11 +806,6 @@ public class RealmModelDelegate implements RealmModel {
     }
 
     @Override
-    public List<IdentityProviderModel> getIdentityProviders() {
-        return delegate.getIdentityProviders();
-    }
-
-    @Override
     public IdentityProviderModel getIdentityProviderByAlias(String alias) {
         return delegate.getIdentityProviderByAlias(alias);
     }
@@ -852,16 +823,6 @@ public class RealmModelDelegate implements RealmModel {
     @Override
     public void updateIdentityProvider(IdentityProviderModel identityProvider) {
         delegate.updateIdentityProvider(identityProvider);
-    }
-
-    @Override
-    public Set<IdentityProviderMapperModel> getIdentityProviderMappers() {
-        return delegate.getIdentityProviderMappers();
-    }
-
-    @Override
-    public Set<IdentityProviderMapperModel> getIdentityProviderMappersByAlias(String brokerAlias) {
-        return delegate.getIdentityProviderMappersByAlias(brokerAlias);
     }
 
     @Override
@@ -912,21 +873,6 @@ public class RealmModelDelegate implements RealmModel {
     @Override
     public void removeComponents(String parentId) {
         delegate.removeComponents(parentId);
-    }
-
-    @Override
-    public List<ComponentModel> getComponents(String parentId, String providerType) {
-        return delegate.getComponents(parentId, providerType);
-    }
-
-    @Override
-    public List<ComponentModel> getComponents(String parentId) {
-        return delegate.getComponents(parentId);
-    }
-
-    @Override
-    public List<ComponentModel> getComponents() {
-        return delegate.getComponents();
     }
 
     @Override
@@ -1005,18 +951,8 @@ public class RealmModelDelegate implements RealmModel {
     }
 
     @Override
-    public Set<String> getEventsListeners() {
-        return delegate.getEventsListeners();
-    }
-
-    @Override
     public void setEventsListeners(Set<String> listeners) {
         delegate.setEventsListeners(listeners);
-    }
-
-    @Override
-    public Set<String> getEnabledEventTypes() {
-        return delegate.getEnabledEventTypes();
     }
 
     @Override
@@ -1070,11 +1006,6 @@ public class RealmModelDelegate implements RealmModel {
     }
 
     @Override
-    public Set<String> getSupportedLocales() {
-        return delegate.getSupportedLocales();
-    }
-
-    @Override
     public void setSupportedLocales(Set<String> locales) {
         delegate.setSupportedLocales(locales);
     }
@@ -1105,11 +1036,6 @@ public class RealmModelDelegate implements RealmModel {
     }
 
     @Override
-    public List<GroupModel> getGroups() {
-        return delegate.getGroups();
-    }
-
-    @Override
     public Long getGroupsCount(Boolean onlyTopGroups) {
         return delegate.getGroupsCount(onlyTopGroups);
     }
@@ -1120,21 +1046,6 @@ public class RealmModelDelegate implements RealmModel {
     }
 
     @Override
-    public List<GroupModel> getTopLevelGroups() {
-        return delegate.getTopLevelGroups();
-    }
-
-    @Override
-    public List<GroupModel> getTopLevelGroups(Integer first, Integer max) {
-        return delegate.getTopLevelGroups(first, max);
-    }
-
-    @Override
-    public List<GroupModel> searchForGroupByName(String search, Integer first, Integer max) {
-        return delegate.searchForGroupByName(search, first, max);
-    }
-
-    @Override
     public boolean removeGroup(GroupModel group) {
         return delegate.removeGroup(group);
     }
@@ -1142,11 +1053,6 @@ public class RealmModelDelegate implements RealmModel {
     @Override
     public void moveGroup(GroupModel group, GroupModel toParent) {
         delegate.moveGroup(group, toParent);
-    }
-
-    @Override
-    public List<ClientScopeModel> getClientScopes() {
-        return delegate.getClientScopes();
     }
 
     @Override
@@ -1180,7 +1086,257 @@ public class RealmModelDelegate implements RealmModel {
     }
 
     @Override
-    public List<ClientScopeModel> getDefaultClientScopes(boolean defaultScope) {
-        return delegate.getDefaultClientScopes(defaultScope);
+    public Stream<ClientScopeModel> getDefaultClientScopesStream(boolean defaultScope) {
+        return delegate.getDefaultClientScopesStream(defaultScope);
+    }
+
+    @Override
+    public int getClientSessionIdleTimeout() {
+        return delegate.getClientSessionIdleTimeout();
+    }
+
+    @Override
+    public void setClientSessionIdleTimeout(int seconds) {
+        delegate.setClientSessionIdleTimeout(seconds);
+    }
+
+    @Override
+    public int getClientSessionMaxLifespan() {
+        return delegate.getClientSessionMaxLifespan();
+    }
+
+    @Override
+    public void setClientSessionMaxLifespan(int seconds) {
+        delegate.setClientSessionMaxLifespan(seconds);
+    }
+
+    @Override
+    public int getClientOfflineSessionIdleTimeout() {
+        return delegate.getClientOfflineSessionIdleTimeout();
+    }
+
+    @Override
+    public void setClientOfflineSessionIdleTimeout(int seconds) {
+        delegate.setClientOfflineSessionIdleTimeout(seconds);
+    }
+
+    @Override
+    public int getClientOfflineSessionMaxLifespan() {
+        return delegate.getClientOfflineSessionMaxLifespan();
+    }
+
+    @Override
+    public void setClientOfflineSessionMaxLifespan(int seconds) {
+        delegate.setClientOfflineSessionMaxLifespan(seconds);
+    }
+
+    @Override
+    public Stream<RequiredCredentialModel> getRequiredCredentialsStream() {
+        return delegate.getRequiredCredentialsStream();
+    }
+
+    @Override
+    public WebAuthnPolicy getWebAuthnPolicyPasswordless() {
+        return delegate.getWebAuthnPolicyPasswordless();
+    }
+
+    @Override
+    public void setWebAuthnPolicyPasswordless(WebAuthnPolicy policy) {
+        delegate.setWebAuthnPolicyPasswordless(policy);
+    }
+
+    @Override
+    public Stream<GroupModel> getDefaultGroupsStream() {
+        return delegate.getDefaultGroupsStream();
+    }
+
+    @Override
+    public Stream<ClientModel> getClientsStream() {
+        return delegate.getClientsStream();
+    }
+
+    @Override
+    public Stream<ClientModel> getClientsStream(Integer firstResult, Integer maxResults) {
+        return delegate.getClientsStream(firstResult, maxResults);
+    }
+
+    @Override
+    public Long getClientsCount() {
+        return delegate.getClientsCount();
+    }
+
+    @Override
+    public Stream<ClientModel> getAlwaysDisplayInConsoleClientsStream() {
+        return delegate.getAlwaysDisplayInConsoleClientsStream();
+    }
+
+    @Override
+    public Stream<ClientModel> searchClientByClientIdStream(String clientId, Integer firstResult, Integer maxResults) {
+        return delegate.searchClientByClientIdStream(clientId, firstResult, maxResults);
+    }
+
+    @Override
+    public Stream<ClientModel> searchClientByAttributes(Map<String, String> attributes, Integer firstResult, Integer maxResults) {
+        return delegate.searchClientByAttributes(attributes, firstResult, maxResults);
+    }
+
+    @Override
+    public Stream<AuthenticationFlowModel> getAuthenticationFlowsStream() {
+        return delegate.getAuthenticationFlowsStream();
+    }
+
+    @Override
+    public Stream<AuthenticationExecutionModel> getAuthenticationExecutionsStream(String flowId) {
+        return delegate.getAuthenticationExecutionsStream(flowId);
+    }
+
+    @Override
+    public Stream<AuthenticatorConfigModel> getAuthenticatorConfigsStream() {
+        return delegate.getAuthenticatorConfigsStream();
+    }
+
+    @Override
+    public Stream<RequiredActionProviderModel> getRequiredActionProvidersStream() {
+        return delegate.getRequiredActionProvidersStream();
+    }
+
+    @Override
+    public Stream<IdentityProviderModel> getIdentityProvidersStream() {
+        return delegate.getIdentityProvidersStream();
+    }
+
+    @Override
+    public Stream<IdentityProviderMapperModel> getIdentityProviderMappersStream() {
+        return delegate.getIdentityProviderMappersStream();
+    }
+
+    @Override
+    public Stream<IdentityProviderMapperModel> getIdentityProviderMappersByAliasStream(String brokerAlias) {
+        return delegate.getIdentityProviderMappersByAliasStream(brokerAlias);
+    }
+
+    @Override
+    public Stream<ComponentModel> getComponentsStream(String parentId, String providerType) {
+        return delegate.getComponentsStream(parentId, providerType);
+    }
+
+    @Override
+    public Stream<ComponentModel> getComponentsStream(String parentId) {
+        return delegate.getComponentsStream(parentId);
+    }
+
+    @Override
+    public Stream<ComponentModel> getComponentsStream() {
+        return delegate.getComponentsStream();
+    }
+
+    @Override
+    public Stream<String> getEventsListenersStream() {
+        return delegate.getEventsListenersStream();
+    }
+
+    @Override
+    public Stream<String> getEnabledEventTypesStream() {
+        return delegate.getEnabledEventTypesStream();
+    }
+
+    @Override
+    public Stream<String> getSupportedLocalesStream() {
+        return delegate.getSupportedLocalesStream();
+    }
+
+    @Override
+    public GroupModel createGroup(String id, String name, GroupModel toParent) {
+        return delegate.createGroup(id, name, toParent);
+    }
+
+    @Override
+    public Stream<GroupModel> getGroupsStream() {
+        return delegate.getGroupsStream();
+    }
+
+    @Override
+    public Stream<GroupModel> getTopLevelGroupsStream() {
+        return delegate.getTopLevelGroupsStream();
+    }
+
+    @Override
+    public Stream<GroupModel> getTopLevelGroupsStream(Integer first, Integer max) {
+        return delegate.getTopLevelGroupsStream(first, max);
+    }
+
+    @Override
+    public Stream<GroupModel> searchForGroupByNameStream(String search, Integer first, Integer max) {
+        return delegate.searchForGroupByNameStream(search, first, max);
+    }
+
+    @Override
+    public Stream<ClientScopeModel> getClientScopesStream() {
+        return delegate.getClientScopesStream();
+    }
+
+    @Override
+    public void patchRealmLocalizationTexts(String locale, Map<String, String> localizationTexts) {
+        delegate.patchRealmLocalizationTexts(locale, localizationTexts);;
+    }
+
+    @Override
+    public boolean removeRealmLocalizationTexts(String locale) {
+        return delegate.removeRealmLocalizationTexts(locale);
+    }
+
+    @Override
+    public Map<String, Map<String, String>> getRealmLocalizationTexts() {
+        return delegate.getRealmLocalizationTexts();
+    }
+
+    @Override
+    public Map<String, String> getRealmLocalizationTextsByLocale(String locale) {
+        return delegate.getRealmLocalizationTextsByLocale(locale);
+    }
+
+    @Override
+    public OAuth2DeviceConfig getOAuth2DeviceConfig() {
+        return delegate.getOAuth2DeviceConfig();
+    }
+
+    @Override
+    public CibaConfig getCibaPolicy() {
+        return delegate.getCibaPolicy();
+    }
+
+    @Override
+    public RoleModel getDefaultRole() {
+        return delegate.getDefaultRole();
+    }
+
+    @Override
+    public void setDefaultRole(RoleModel role) {
+        delegate.setDefaultRole(role);
+    }
+
+    @Override
+    public ClientInitialAccessModel createClientInitialAccessModel(int expiration, int count) {
+        return delegate.createClientInitialAccessModel(expiration, count);
+    }
+
+    @Override
+    public ClientInitialAccessModel getClientInitialAccessModel(String id) {
+        return delegate.getClientInitialAccessModel(id);
+    }
+
+    @Override
+    public void removeClientInitialAccessModel(String id) {
+        delegate.removeClientInitialAccessModel(id);
+    }
+
+    @Override
+    public Stream<ClientInitialAccessModel> getClientInitialAccesses() {
+        return delegate.getClientInitialAccesses();
+    }
+
+    @Override
+    public void decreaseRemainingCount(ClientInitialAccessModel clientInitialAccess) {
+        delegate.decreaseRemainingCount(clientInitialAccess);
     }
 }

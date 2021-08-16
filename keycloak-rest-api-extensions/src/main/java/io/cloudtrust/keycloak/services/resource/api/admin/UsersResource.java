@@ -4,6 +4,7 @@ import io.cloudtrust.keycloak.representations.idm.UsersPageRepresentation;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
+import org.keycloak.common.util.ObjectUtil;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
 import org.keycloak.models.GroupModel;
@@ -13,14 +14,19 @@ import org.keycloak.models.ModelException;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.models.utils.RepresentationToModel;
+import org.keycloak.policy.PasswordPolicyNotMetException;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.ForbiddenException;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
+import org.keycloak.services.resources.admin.UserResource;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 import org.keycloak.services.resources.admin.permissions.UserPermissionEvaluator;
+import org.keycloak.userprofile.UserProfile;
+import org.keycloak.userprofile.UserProfileProvider;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -33,9 +39,10 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
+import java.util.function.Consumer;
+
+import static org.keycloak.userprofile.UserProfileContext.USER_API;
 
 public class UsersResource extends org.keycloak.services.resources.admin.UsersResource {
     private static final Logger logger = Logger.getLogger(UsersResource.class);
@@ -56,34 +63,14 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
      * This extended API allows to assign groups and roles at user creation.
      * <p>
      * Username must be unique.
-     *
-     * @param rep
-     * @return
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Override
     public Response createUser(final UserRepresentation rep) {
-        // Security checks
-        auth.users().requireManage();
-
-        List<GroupModel> groups = getGroups(rep.getGroups());
-        List<RoleModel> roles = getRoles(rep.getRealmRoles());
-
-        // Double-check duplicated username and email here due to federation
-        if (kcSession.users().getUserByUsername(rep.getUsername(), realm) != null) {
-            return ErrorResponse.exists("User exists with same username");
-        }
-        if (rep.getEmail() != null && !realm.isDuplicateEmailsAllowed() && kcSession.users().getUserByEmail(rep.getEmail(), realm) != null) {
-            return ErrorResponse.exists("User exists with same email");
-        }
-
-        try {
-            UserModel user = kcSession.users().addUser(realm, rep.getUsername());
-            Set<String> emptySet = Collections.emptySet();
-
-            org.keycloak.services.resources.admin.UserResource.updateUserFromRep(user, rep, emptySet, realm, kcSession, false);
-            RepresentationToModel.createCredentials(rep, kcSession, realm, user, true);
+        return legacyCreateUser(rep, user -> {
+            List<GroupModel> groups = getGroups(rep.getGroups());
+            List<RoleModel> roles = getRoles(rep.getRealmRoles());
 
             // Add groups
             for (GroupModel group : groups) {
@@ -94,25 +81,108 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
             for (RoleModel role : roles) {
                 user.grantRole(role);
             }
+        });
+    }
 
-            adminEvent.operation(OperationType.CREATE).resourcePath(kcSession.getContext().getUri(), user.getId()).representation(rep).success();
+    /**
+     * Create a new user
+     * <p>
+     * Username must be unique.
+     * This method is a copy/paste of org.keycloak.services.resources.admin.UsersResource where:
+     * - we add a consumer processing
+     * - we removed call to RepresentationToModel.createGroups
+     *
+     * @param rep
+     * @param userUpdater
+     * @return
+     */
+    private Response legacyCreateUser(final UserRepresentation rep, Consumer<UserModel> userUpdater) {
+        // first check if user has manage rights
+        try {
+            auth.users().requireManage();
+        } catch (ForbiddenException exception) {
+            // if user does not have manage rights, fallback to fine grain admin permissions per group
+            if (rep.getGroups() != null) {
+                // if groups is part of the user rep, check if admin has manage_members and manage_membership on each group
+                for (String groupPath : rep.getGroups()) {
+                    GroupModel group = KeycloakModelUtils.findGroupByPath(realm, groupPath);
+                    if (group != null) {
+                        auth.groups().requireManageMembers(group);
+                        auth.groups().requireManageMembership(group);
+                    } else {
+                        return ErrorResponse.error(String.format("Group %s not found", groupPath), Response.Status.BAD_REQUEST);
+                    }
+                }
+            } else {
+                // propagate exception if no group specified
+                throw exception;
+            }
+        }
 
-            if (kcSession.getTransactionManager().isActive()) {
-                kcSession.getTransactionManager().commit();
+        String username = rep.getUsername();
+        if (realm.isRegistrationEmailAsUsername()) {
+            username = rep.getEmail();
+        }
+        if (ObjectUtil.isBlank(username)) {
+            return ErrorResponse.error("User name is missing", Response.Status.BAD_REQUEST);
+        }
+
+        // Double-check duplicated username and email here due to federation
+        if (session.users().getUserByUsername(realm, username) != null) {
+            return ErrorResponse.exists("User exists with same username");
+        }
+        if (rep.getEmail() != null && !realm.isDuplicateEmailsAllowed()) {
+            try {
+                if (session.users().getUserByEmail(realm, rep.getEmail()) != null) {
+                    return ErrorResponse.exists("User exists with same email");
+                }
+            } catch (ModelDuplicateException e) {
+                return ErrorResponse.exists("User exists with same email");
+            }
+        }
+
+        UserProfileProvider profileProvider = session.getProvider(UserProfileProvider.class);
+
+        UserProfile profile = profileProvider.create(USER_API, rep.toAttributes());
+
+        try {
+            Response response = UserResource.validateUserProfile(profile, null, session);
+            if (response != null) {
+                return response;
             }
 
-            return Response.created(kcSession.getContext().getUri().getAbsolutePathBuilder().path(user.getId()).build()).build();
+            UserModel user = profile.create();
+
+            UserResource.updateUserFromRep(profile, user, rep, session, false);
+            RepresentationToModel.createFederatedIdentities(rep, session, realm, user);
+
+            RepresentationToModel.createCredentials(rep, session, realm, user, true);
+            /* Cloudtrust specific - begin */
+            userUpdater.accept(user);
+            /* Cloudtrust specific - end */
+            adminEvent.operation(OperationType.CREATE).resourcePath(session.getContext().getUri(), user.getId()).representation(rep).success();
+
+            if (session.getTransactionManager().isActive()) {
+                session.getTransactionManager().commit();
+            }
+
+            return Response.created(session.getContext().getUri().getAbsolutePathBuilder().path(user.getId()).build()).build();
         } catch (ModelDuplicateException e) {
-            if (kcSession.getTransactionManager().isActive()) {
-                kcSession.getTransactionManager().setRollbackOnly();
+            if (session.getTransactionManager().isActive()) {
+                session.getTransactionManager().setRollbackOnly();
             }
             return ErrorResponse.exists("User exists with same username or email");
+        } catch (PasswordPolicyNotMetException e) {
+            if (session.getTransactionManager().isActive()) {
+                session.getTransactionManager().setRollbackOnly();
+            }
+            return ErrorResponse.error("Password policy not met", Response.Status.BAD_REQUEST);
         } catch (ModelException me) {
-            if (kcSession.getTransactionManager().isActive()) {
-                kcSession.getTransactionManager().setRollbackOnly();
+            if (session.getTransactionManager().isActive()) {
+                session.getTransactionManager().setRollbackOnly();
             }
             logger.warn("Could not create user", me);
-            return ErrorResponse.exists("Could not create user");
+            return ErrorResponse.error("Could not create user", Response.Status.BAD_REQUEST);
         }
     }
 
@@ -120,8 +190,7 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
         List<GroupModel> res = new ArrayList<>();
         if (groups != null) {
             for (String groupId : groups) {
-                GroupModel group = kcSession.realms().getGroupById(groupId, realm);
-
+                GroupModel group = kcSession.realms().getGroupsStream(realm).filter(g -> groupId.equals(g.getId())).findFirst().orElse(null);
                 if (group == null) {
                     throw new NotFoundException("Group not found");
                 }
@@ -154,12 +223,12 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
      * Get representation of the user
      *
      * @param id User id
-     * @return
+     * @return Found user resource
      */
     @Path("{id}")
     @Override
     public CtUserResource user(final @PathParam("id") String id) {
-        UserModel user = kcSession.users().getUserById(id, realm);
+        UserModel user = kcSession.users().getUserById(realm, id);
         if (user == null) {
             // we do this to make sure nobody can phish ids
             if (auth.users().canQuery()) throw new NotFoundException("User not found");
@@ -179,16 +248,16 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
      * Adding multiple groups and multiple roles will give the intersection of users that belong both to the the specified groups and the specified roles
      * If either groups or roles are specified in the call, paging with "first" and/or "max" is impossible, and trying will return a 501.
      *
-     * @param groups     A list of group Ids
-     * @param roles      A list of realm role names
-     * @param search     A special search field: when used, all other search fields are ignored. Can be something like id:abcd-efg-123
-     *                   or a string which can be contained in the first+last name, email or username
-     * @param last       A user's last name
-     * @param first      A user's first name
-     * @param email      A user's email
-     * @param username   A user's username
-     * @param first      Pagination offset
-     * @param maxResults Maximum results size (defaults to 100) - only taken into account if no group / role is defined
+     * @param groups      A list of group Ids
+     * @param roles       A list of realm role names
+     * @param search      A special search field: when used, all other search fields are ignored. Can be something like id:abcd-efg-123
+     *                    or a string which can be contained in the first+last name, email or username
+     * @param last        A user's last name
+     * @param first       A user's first name
+     * @param email       A user's email
+     * @param username    A user's username
+     * @param firstResult Pagination offset
+     * @param maxResults  Maximum results size (defaults to 100) - only taken into account if no group / role is defined
      * @return A list of users corresponding to the searched parameters, as well as the total count of users
      */
     @GET
