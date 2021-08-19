@@ -102,7 +102,7 @@ public class FixedAccountRestService extends AccountRestService {
                     .detail("ct_event_type", "SELF_DELETE_ACCOUNT")
                     .detail("username", delUser.getUsername())
                     .success();
-            return Cors.add(request, Response.ok()).auth().allowedOrigins(auth.getToken()).build();
+            return Cors.add(request, Response.noContent()).auth().allowedOrigins(auth.getToken()).build();
         } else {
             event.event(EventType.UPDATE_PROFILE).user(delUser)
                     .client(auth.getClient())
@@ -150,7 +150,7 @@ public class FixedAccountRestService extends AccountRestService {
                     .setUser(user)
                     .sendExecuteActions(link, TimeUnit.SECONDS.toMinutes(lifespan));
 
-            return Response.ok().build();
+            return Response.noContent().build();
         } catch (EmailException e) {
             ServicesLogger.LOGGER.failedToSendActionsEmail(e);
             return ErrorResponse.error("Failed to send execute actions email", Status.INTERNAL_SERVER_ERROR);
