@@ -96,7 +96,7 @@ public class FixedAccountCredentialResource {
         }
 
         session.userCredentialManager().removeStoredCredential(realm, user, credentialId);
-        return Response.ok().build();
+        return Response.noContent().build();
     }
 
     /**
@@ -113,7 +113,7 @@ public class FixedAccountCredentialResource {
         }
 
         session.userCredentialManager().updateCredentialLabel(realm, user, credentialId, userLabel);
-        return Response.ok().build();
+        return Response.noContent().build();
     }
 
     /**
@@ -147,7 +147,7 @@ public class FixedAccountCredentialResource {
         }
 
         session.userCredentialManager().moveCredentialTo(realm, user, credentialId, newPreviousCredentialId);
-        return Response.ok().build();
+        return Response.noContent().build();
     }
 
     @GET
@@ -199,7 +199,7 @@ public class FixedAccountCredentialResource {
             return ErrorResponse.error(e.getMessage(), e.getParameters(), Response.Status.BAD_REQUEST);
         }
 
-        return Response.ok().build();
+        return Response.noContent().build();
     }
 
     public static class PasswordDetails {
