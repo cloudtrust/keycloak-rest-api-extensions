@@ -22,6 +22,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserManager;
 import org.keycloak.models.UserModel;
+import org.keycloak.representations.account.UserRepresentation;
 import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.ServicesLogger;
 import org.keycloak.services.managers.Auth;
@@ -82,6 +83,27 @@ public class FixedAccountRestService extends AccountRestService {
     }
 
     /**
+     * @param rep
+     * @return
+     */
+    @Path("/")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @NoCache
+    public Response updateAccount(UserRepresentation rep) {
+        boolean emailUpdated = user != null && rep.getEmail() != null && !rep.getEmail().equalsIgnoreCase(user.getEmail());
+        Response resp = super.updateAccount(rep);
+        if (emailUpdated && resp.getStatus() < 400) {
+            /**
+             * EmailVerified is not updatable through KC API in version 14.0
+             */
+            user.setEmailVerified(false);
+        }
+        return resp;
+    }
+
+    /**
      * Delete account
      *
      * @return REST response
@@ -115,7 +137,6 @@ public class FixedAccountRestService extends AccountRestService {
 
     /**
      * Send execute actions email
-     *
      */
     @Path("execute-actions-email")
     @PUT
