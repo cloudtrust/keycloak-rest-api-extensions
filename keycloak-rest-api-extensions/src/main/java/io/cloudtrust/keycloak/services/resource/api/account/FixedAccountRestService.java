@@ -199,7 +199,7 @@ public class FixedAccountRestService extends AccountRestService {
         }
 
         UriBuilder builder = LoginActionsService.loginActionsBaseUrl(session.getContext().getUri()).path(getClass(), "sendMail");
-        String link = builder.build(realm.getName()).toString() + "/";
+        String link = builder.build(realm.getName()).toString();
 
         KeycloakContext context = session.getContext();
         EmailTemplateProvider emailProvider = session.getProvider(EmailTemplateProvider.class)
