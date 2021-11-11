@@ -1,5 +1,6 @@
 package io.cloudtrust.keycloak.services.resource.api.admin;
 
+import io.cloudtrust.keycloak.services.resource.api.ApiConfig;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
@@ -18,18 +19,20 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 
 public class RealmsAdminResource extends org.keycloak.services.resources.admin.RealmsAdminResource {
+    private ApiConfig apiConfig;
 
-    public RealmsAdminResource(AdminAuth auth, TokenManager tokenManager, KeycloakSession session) {
+    public RealmsAdminResource(AdminAuth auth, TokenManager tokenManager, KeycloakSession session, ApiConfig apiConfig) {
         super(auth, tokenManager);
         this.session = session;
         this.clientConnection = session.getContext().getConnection();
+        this.apiConfig = apiConfig;
     }
 
     /**
      * Base path for the admin REST API for one particular realm.
      *
      * @param headers
-     * @param name realm name (not id!)
+     * @param name    realm name (not id!)
      * @return
      */
     @Path("{realm}")
@@ -51,8 +54,6 @@ public class RealmsAdminResource extends org.keycloak.services.resources.admin.R
 
         org.keycloak.services.resources.admin.RealmAdminResource adminResource = new RealmAdminResource(realmAuth, realm, tokenManager, adminEvent, session);
         ResteasyProviderFactory.getInstance().injectProperties(adminResource);
-        //resourceContext.initResource(adminResource);
         return adminResource;
     }
-
 }

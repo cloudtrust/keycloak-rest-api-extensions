@@ -95,6 +95,7 @@ cleanup()
     echo "cleanup..."
     xmlstarlet ed -L -N c="urn:jboss:domain:keycloak-server:1.1" -d "/_:server/_:profile/c:subsystem/c:providers/c:provider[text()='module:$MODULE_NAME']" $CONF_FILE
     xmlstarlet ed -L -N c="urn:jboss:domain:keycloak-server:1.1" -d "/_:server/_:profile/c:subsystem/c:theme/c:modules/c:module[text()='$MODULE_NAME']" $CONF_FILE
+    xmlstarlet ed -L -N c="urn:jboss:domain:keycloak-server:1.1" -d "/_:server/_:profile/c:subsystem/c:spi[@name='realm-restapi-extension']/c:provider[@name='api']" $CONF_FILE
     sed -i "$ s/,$MODULE$//" $argv__KEYCLOAK/modules/layers.conf
     sed -i "$ s/\([=,]\)$MODULE,/\1/" $argv__KEYCLOAK/modules/layers.conf
     rm -rf $argv__KEYCLOAK/modules/system/layers/$MODULE
@@ -147,6 +148,13 @@ Main__main()
     xmlstarlet ed -L -N c="urn:jboss:domain:keycloak-server:1.1" -s /_:server/_:profile/c:subsystem/c:providers -t elem -n provider -v "module:$MODULE_NAME" $CONF_FILE
 
     MODULES_EXISTS=`xmlstarlet sel -N c="urn:jboss:domain:keycloak-server:1.1" -t -v "count(/_:server/_:profile/c:subsystem/c:theme/c:modules/c:module)" $CONF_FILE`
+    xmlstarlet ed -L -N c="urn:jboss:domain:keycloak-server:1.1" -s "/_:server/_:profile/c:subsystem/c:spi[@name='realm-restapi-extension']" -t elem -n provider $CONF_FILE
+    xmlstarlet ed -L -N c="urn:jboss:domain:keycloak-server:1.1" -i "/_:server/_:profile/c:subsystem/c:spi[@name='realm-restapi-extension']/c:provider[not(@name)]" -t attr -n name -v 'api' $CONF_FILE
+    xmlstarlet ed -L -N c="urn:jboss:domain:keycloak-server:1.1" -i "/_:server/_:profile/c:subsystem/c:spi[@name='realm-restapi-extension']/c:provider[@name='api']" -t attr -n enabled -v 'true' $CONF_FILE
+    xmlstarlet ed -L -N c="urn:jboss:domain:keycloak-server:1.1" -s "/_:server/_:profile/c:subsystem/c:spi[@name='realm-restapi-extension']/c:provider[@name='api']" -t elem -n properties $CONF_FILE
+    xmlstarlet ed -L -N c="urn:jboss:domain:keycloak-server:1.1" -s "/_:server/_:profile/c:subsystem/c:spi[@name='realm-restapi-extension']/c:provider[@name='api']/c:properties" -t elem -n property $CONF_FILE
+    xmlstarlet ed -L -N c="urn:jboss:domain:keycloak-server:1.1" -i "/_:server/_:profile/c:subsystem/c:spi[@name='realm-restapi-extension']/c:provider[@name='api']/c:properties/c:property[not(@*)]" -t attr -n name -v 'termsOfUseAcceptanceDelayDays' $CONF_FILE
+    xmlstarlet ed -L -N c="urn:jboss:domain:keycloak-server:1.1" -i "/_:server/_:profile/c:subsystem/c:spi[@name='realm-restapi-extension']/c:provider[@name='api']/c:properties/c:property[@name='termsOfUseAcceptanceDelayDays']" -t attr -n value -v '60' $CONF_FILE
 
     exit 0
 }
