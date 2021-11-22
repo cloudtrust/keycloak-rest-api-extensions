@@ -147,7 +147,11 @@ Main__main()
     # FIXME make this reentrant then test
     xmlstarlet ed -L -N c="urn:jboss:domain:keycloak-server:1.1" -s /_:server/_:profile/c:subsystem/c:providers -t elem -n provider -v "module:$MODULE_NAME" $CONF_FILE
 
-    MODULES_EXISTS=`xmlstarlet sel -N c="urn:jboss:domain:keycloak-server:1.1" -t -v "count(/_:server/_:profile/c:subsystem/c:theme/c:modules/c:module)" $CONF_FILE`
+    MODULES_EXISTS=`xmlstarlet sel -N c="urn:jboss:domain:keycloak-server:1.1" -t -v "count(/_:server/_:profile/c:subsystem/c:spi[@name='realm-restapi-extension'])" $CONF_FILE`
+    if [ $MODULES_EXISTS -eq "0" ]; then
+        xmlstarlet ed -L -N c="urn:jboss:domain:keycloak-server:1.1" -s "/_:server/_:profile/c:subsystem" -t elem -n spi $CONF_FILE
+        xmlstarlet ed -L -N c="urn:jboss:domain:keycloak-server:1.1" -i "/_:server/_:profile/c:subsystem/c:spi[not(@name)]" -t attr -n 'name' -v 'realm-restapi-extension' $CONF_FILE
+    fi
     xmlstarlet ed -L -N c="urn:jboss:domain:keycloak-server:1.1" -s "/_:server/_:profile/c:subsystem/c:spi[@name='realm-restapi-extension']" -t elem -n provider $CONF_FILE
     xmlstarlet ed -L -N c="urn:jboss:domain:keycloak-server:1.1" -i "/_:server/_:profile/c:subsystem/c:spi[@name='realm-restapi-extension']/c:provider[not(@name)]" -t attr -n name -v 'api' $CONF_FILE
     xmlstarlet ed -L -N c="urn:jboss:domain:keycloak-server:1.1" -i "/_:server/_:profile/c:subsystem/c:spi[@name='realm-restapi-extension']/c:provider[@name='api']" -t attr -n enabled -v 'true' $CONF_FILE
