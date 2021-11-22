@@ -13,10 +13,12 @@ import javax.ws.rs.PathParam;
 
 public class ApiRoot {
 
-    private KeycloakSession session;
+    private final KeycloakSession session;
+    private final ApiConfig apiConfig;
 
-    public ApiRoot(KeycloakSession session) {
+    public ApiRoot(KeycloakSession session, ApiConfig apiConfig) {
         this.session = session;
+        this.apiConfig = apiConfig;
     }
 
     /**
@@ -24,7 +26,7 @@ public class ApiRoot {
      */
     @Path("admin")
     public Object getAdminApiRoot() {
-        return new AdminRoot(session);
+        return new AdminRoot(session, apiConfig);
     }
 
 
@@ -44,5 +46,4 @@ public class ApiRoot {
         session.getContext().setRealm(realm);
         return realm;
     }
-
 }
