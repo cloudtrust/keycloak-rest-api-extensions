@@ -85,10 +85,8 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
         RealmManager realmManager = new RealmManager(session);
         RealmModel realm = realmManager.getRealm("master");
         AdminPermissionEvaluator realmAuth = AdminPermissions.evaluator(session, realm, auth);
-        logger.infof("Check required rights");
         realmAuth.users().requireManage();
 
-        logger.infof("Required rights checked");
         long limit = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(apiConfig.getTermsOfUseAcceptanceDelayMillis());
         EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
         List<Object[]> result = em.createNativeQuery(
@@ -100,7 +98,7 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
                 .setParameter("requiredAction", "ct-terms-of-use")
                 .setParameter("limit", limit)
                 .getResultList();
-        logger.infof("Found %d rows", result.size());
+        logger.debugf("expiredTermsOfUseAcceptance> found %d rows", result.size());
         return result.stream()
                 .map(this::createDeletableUser)
                 .collect(Collectors.toList());
