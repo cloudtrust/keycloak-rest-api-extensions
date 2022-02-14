@@ -44,10 +44,10 @@ import java.util.concurrent.TimeUnit;
 public class CtUserResource extends UserResource {
     private static final Logger logger = Logger.getLogger(CtUserResource.class);
 
-    private AdminPermissionEvaluator auth;
-    private AdminEventBuilder adminEvent;
-    private KeycloakSession kcSession;
-    private UserModel user;
+    private final AdminPermissionEvaluator auth;
+    private final AdminEventBuilder adminEvent;
+    private final KeycloakSession kcSession;
+    private final UserModel user;
 
     public CtUserResource(KeycloakSession kcSession, UserModel user, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         super(kcSession.getContext().getRealm(), user, auth, adminEvent);
@@ -84,14 +84,14 @@ public class CtUserResource extends UserResource {
         attributes.put("realmName", realm.getDisplayName());
         attributes.put("link", link);
         if (emailModel.getTheming().getTemplateParameters() != null) {
-            emailModel.getTheming().getTemplateParameters().forEach(attributes::put);
+            attributes.putAll(emailModel.getTheming().getTemplateParameters());
         }
 
         return EmailSender.sendMail(kcSession, realm, emailModel, locale, attributes);
     }
 
     /**
-     * Send a update account email to the user
+     * Send an update account email to the user
      * <p>
      * An email contains a link the user can click to perform a set of required actions.
      * The redirectUri and clientId parameters are optional. If no redirect is given, then there will
@@ -101,9 +101,14 @@ public class CtUserResource extends UserResource {
      * @param redirectUri    Redirect uri
      * @param clientId       Client id
      * @param lifespan       Number of seconds after which the generated token expires
+     * @param custom1        Custom parameter
+     * @param custom2        Custom parameter
+     * @param custom3        Custom parameter
+     * @param custom4        Custom parameter
+     * @param custom5        Custom parameter
      * @param themeRealmName Name of the realm used for theming
      * @param actions        required actions the user needs to complete
-     * @return
+     * @return status no-content if successful, returns error otherwise
      */
     @Path("execute-actions-email")
     @PUT
@@ -111,6 +116,11 @@ public class CtUserResource extends UserResource {
     public Response executeActionsEmail(@QueryParam(OIDCLoginProtocol.REDIRECT_URI_PARAM) String redirectUri,
                                         @QueryParam(OIDCLoginProtocol.CLIENT_ID_PARAM) String clientId,
                                         @QueryParam("lifespan") Integer lifespan,
+                                        @QueryParam("custom1") String custom1,
+                                        @QueryParam("custom2") String custom2,
+                                        @QueryParam("custom3") String custom3,
+                                        @QueryParam("custom4") String custom4,
+                                        @QueryParam("custom5") String custom5,
                                         @QueryParam("themeRealm") String themeRealmName,
                                         List<String> actions) {
         auth.users().requireManage(user);
@@ -181,6 +191,11 @@ public class CtUserResource extends UserResource {
 
             this.session.getProvider(EmailTemplateProvider.class)
                     .setAttribute(Constants.TEMPLATE_ATTR_REQUIRED_ACTIONS, token.getRequiredActions())
+                    .setAttribute("custom1", custom1)
+                    .setAttribute("custom2", custom2)
+                    .setAttribute("custom3", custom3)
+                    .setAttribute("custom4", custom4)
+                    .setAttribute("custom5", custom5)
                     .setRealm(realm)
                     .setUser(user)
                     .sendExecuteActions(link, TimeUnit.SECONDS.toMinutes(lifespan));
