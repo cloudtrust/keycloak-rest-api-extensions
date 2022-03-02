@@ -2,6 +2,8 @@ package io.cloudtrust.keycloak.services.resource.api.admin;
 
 import io.cloudtrust.keycloak.representations.idm.DeletableUserRepresentation;
 import io.cloudtrust.keycloak.services.resource.api.ApiConfig;
+import io.cloudtrust.keycloak.services.resource.api.model.EmailInfo;
+import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.HttpResponse;
@@ -17,12 +19,16 @@ import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluato
 import org.keycloak.services.resources.admin.permissions.AdminPermissions;
 
 import javax.persistence.EntityManager;
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.GET;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.NotAuthorizedException;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -66,6 +72,7 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
 
     /**
      * Get the list of users who did not accept terms of use in the given delay
+     *
      * @param request HTTP request
      * @return
      */
@@ -110,6 +117,60 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
         res.setUsername((String) userInfo[1]);
         res.setRealmId((String) userInfo[2]);
         res.setRealmName((String) userInfo[3]);
+        return res;
+    }
+
+    /**
+     * Get information relative to a given email address
+     *
+     * @param request HTTP request
+     * @return
+     */
+    @Path("support-infos")
+    @GET
+    @Produces(javax.ws.rs.core.MediaType.APPLICATION_JSON)
+    public List<EmailInfo> getSupportInformation(@Context final HttpRequest request, @QueryParam("email") String email) {
+        AdminAuth auth = authenticateRealmAdminRequest(request.getHttpHeaders());
+        if (auth == null) {
+            throw new NotAuthorizedException("unauthorized");
+        }
+
+        logger.debug("authenticated admin access for: " + auth.getUser().getUsername());
+        Cors.add(request).allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().build(response);
+
+        // Check rights
+        RealmManager realmManager = new RealmManager(session);
+        RealmModel realm = realmManager.getRealm("master");
+        AdminPermissionEvaluator realmAuth = AdminPermissions.evaluator(session, realm, auth);
+        realmAuth.users().requireView();
+
+        if (StringUtils.isBlank(email)) {
+            throw new BadRequestException("email");
+        }
+
+        EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
+        List<Object[]> result = em.createNativeQuery(
+                        "select r.NAME, ue.CREATED_TIMESTAMP " +
+                                "from USER_ENTITY ue " +
+                                "inner join REALM r ON r.ID=ue.REALM_ID " +
+                                "where ue.EMAIL=:email")
+                .setParameter("email", email)
+                .getResultList();
+        if (result.isEmpty()) {
+            throw new NotFoundException("email");
+        }
+        return result.stream()
+                .map(this::createEmailInfo)
+                .collect(Collectors.toList());
+    }
+
+    private EmailInfo createEmailInfo(Object[] row) {
+        EmailInfo res = new EmailInfo();
+        res.setRealm((String) row[0]);
+        BigInteger creationDate = (BigInteger) row[1];
+        if (creationDate != null) {
+            res.setCreationDate(creationDate.longValue());
+        }
         return res;
     }
 }
