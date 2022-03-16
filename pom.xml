@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.cloudtrust</groupId>
         <artifactId>kc-cloudtrust-module</artifactId>
-        <version>14.0.0</version>
+        <version>17.0.1</version>
     </parent>
 
     <artifactId>keycloak-rest-api-extensions-parent</artifactId>
@@ -16,6 +16,6 @@
 
     <modules>
         <module>keycloak-rest-api-extensions</module>
-        <module>keycloak-rest-api-extensions-tests</module>
+        <!--module>keycloak-rest-api-extensions-tests</module-->
     </modules>
 </project>

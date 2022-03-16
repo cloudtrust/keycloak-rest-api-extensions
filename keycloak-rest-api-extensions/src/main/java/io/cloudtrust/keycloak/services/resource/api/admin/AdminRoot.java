@@ -65,7 +65,7 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
         logger.debug("authenticated admin access for: " + auth.getUser().getUsername());
         Cors.add(request).allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().build(response);
 
-        org.keycloak.services.resources.admin.RealmsAdminResource adminResource = new RealmsAdminResource(auth, tokenManager, session, apiConfig);
+        org.keycloak.services.resources.admin.RealmsAdminResource adminResource = new RealmsAdminResource(auth, tokenManager, session);
         ResteasyProviderFactory.getInstance().injectProperties(adminResource);
         return adminResource;
     }
@@ -96,19 +96,16 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
 
         long limit = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(apiConfig.getTermsOfUseAcceptanceDelayMillis());
         EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
-        List<Object[]> result = em.createNativeQuery(
-                        "select u.ID, u.USERNAME, r.ID REALM_ID, r.NAME REALM_NAME " +
-                                "from USER_ENTITY u " +
-                                "inner join USER_REQUIRED_ACTION ura ON ura.USER_ID=u.ID AND ura.REQUIRED_ACTION=:requiredAction " +
-                                "inner join REALM r ON r.ID=u.REALM_ID " +
-                                "where u.CREATED_TIMESTAMP<:limit")
+        @SuppressWarnings("unchecked")
+        List<Object[]> result = em.createNativeQuery("select u.ID, u.USERNAME, r.ID REALM_ID, r.NAME REALM_NAME "
+                + "from USER_ENTITY u "
+                + "inner join USER_REQUIRED_ACTION ura ON ura.USER_ID=u.ID AND ura.REQUIRED_ACTION=:requiredAction "
+                + "inner join REALM r ON r.ID=u.REALM_ID " + "where u.CREATED_TIMESTAMP<:limit")
                 .setParameter("requiredAction", "ct-terms-of-use")
                 .setParameter("limit", limit)
                 .getResultList();
         logger.debugf("expiredTermsOfUseAcceptance> found %d rows", result.size());
-        return result.stream()
-                .map(this::createDeletableUser)
-                .collect(Collectors.toList());
+        return result.stream().map(this::createDeletableUser).collect(Collectors.toList());
     }
 
     private DeletableUserRepresentation createDeletableUser(Object[] userInfo) {
@@ -149,19 +146,16 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
         }
 
         EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
-        List<Object[]> result = em.createNativeQuery(
-                        "select r.NAME, ue.CREATED_TIMESTAMP " +
-                                "from USER_ENTITY ue " +
-                                "inner join REALM r ON r.ID=ue.REALM_ID " +
-                                "where ue.EMAIL=:email")
+        List<Object[]> result = em.createNativeQuery("select r.NAME, ue.CREATED_TIMESTAMP "
+                + "from USER_ENTITY ue "
+                + "inner join REALM r ON r.ID=ue.REALM_ID "
+                + "where ue.EMAIL=:email")
                 .setParameter("email", email)
                 .getResultList();
         if (result.isEmpty()) {
             throw new NotFoundException("email");
         }
-        return result.stream()
-                .map(this::createEmailInfo)
-                .collect(Collectors.toList());
+        return result.stream().map(this::createEmailInfo).collect(Collectors.toList());
     }
 
     private EmailInfo createEmailInfo(Object[] row) {
