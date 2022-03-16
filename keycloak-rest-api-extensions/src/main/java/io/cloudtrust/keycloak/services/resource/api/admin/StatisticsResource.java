@@ -6,6 +6,7 @@ import org.jboss.resteasy.annotations.cache.NoCache;
 import org.keycloak.connections.jpa.JpaConnectionProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.credential.PasswordCredentialModel;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 
 import javax.persistence.EntityManager;
@@ -17,7 +18,7 @@ import java.math.BigInteger;
 import java.util.List;
 
 public class StatisticsResource {
-    private static final String[] NOT_AUTHENTICATORS = new String[]{"password", "password-history"};
+    private static final String[] NOT_AUTHENTICATORS = new String[]{PasswordCredentialModel.TYPE, PasswordCredentialModel.PASSWORD_HISTORY};
     private static final String PARAM_REALM = "realmId";
 
     private AdminPermissionEvaluator auth;

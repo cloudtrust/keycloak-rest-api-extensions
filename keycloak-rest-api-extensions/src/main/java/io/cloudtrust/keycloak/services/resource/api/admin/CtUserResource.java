@@ -71,8 +71,7 @@ public class CtUserResource extends UserResource {
         }
 
         if (!user.isEnabled()) {
-            throw new WebApplicationException(
-                    ErrorResponse.error("User is disabled", Response.Status.BAD_REQUEST));
+            throw new WebApplicationException(ErrorResponse.error("User is disabled", Response.Status.BAD_REQUEST));
         }
 
         Locale locale = session.getContext().resolveLocale(user);
@@ -130,13 +129,11 @@ public class CtUserResource extends UserResource {
         }
 
         if (!user.isEnabled()) {
-            throw new WebApplicationException(
-                    ErrorResponse.error("User is disabled", Response.Status.BAD_REQUEST));
+            throw new WebApplicationException(ErrorResponse.error("User is disabled", Response.Status.BAD_REQUEST));
         }
 
         if (redirectUri != null && clientId == null) {
-            throw new WebApplicationException(
-                    ErrorResponse.error("Client id missing", Response.Status.BAD_REQUEST));
+            throw new WebApplicationException(ErrorResponse.error("Client id missing", Response.Status.BAD_REQUEST));
         }
 
         if (clientId == null) {
@@ -146,21 +143,18 @@ public class CtUserResource extends UserResource {
         ClientModel client = realm.getClientByClientId(clientId);
         if (client == null) {
             logger.debugf("Client %s doesn't exist", clientId);
-            throw new WebApplicationException(
-                    ErrorResponse.error("Client doesn't exist", Response.Status.BAD_REQUEST));
+            throw new WebApplicationException(ErrorResponse.error("Client doesn't exist", Response.Status.BAD_REQUEST));
         }
         if (!client.isEnabled()) {
             logger.debugf("Client %s is not enabled", clientId);
-            throw new WebApplicationException(
-                    ErrorResponse.error("Client is not enabled", Response.Status.BAD_REQUEST));
+            throw new WebApplicationException(ErrorResponse.error("Client is not enabled", Response.Status.BAD_REQUEST));
         }
 
         String redirect;
         if (redirectUri != null) {
             redirect = RedirectUtils.verifyRedirectUri(session, redirectUri, client);
             if (redirect == null) {
-                throw new WebApplicationException(
-                        ErrorResponse.error("Invalid redirect uri.", Response.Status.BAD_REQUEST));
+                throw new WebApplicationException(ErrorResponse.error("Invalid redirect uri.", Response.Status.BAD_REQUEST));
             }
         }
 
@@ -196,8 +190,8 @@ public class CtUserResource extends UserResource {
                     .setAttribute("custom3", custom3)
                     .setAttribute("custom4", custom4)
                     .setAttribute("custom5", custom5)
-                    .setRealm(realm)
-                    .setUser(user)
+                    .setRealm(realm).setUser(user)
+                    //.send()
                     .sendExecuteActions(link, TimeUnit.SECONDS.toMinutes(lifespan));
 
             adminEvent.operation(OperationType.ACTION).resourcePath(session.getContext().getUri()).success();

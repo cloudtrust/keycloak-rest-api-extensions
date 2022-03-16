@@ -189,11 +189,11 @@
     {
       "clientId": "test-app",
       "enabled": true,
-      "baseUrl": "http://localhost:8180/auth/realms/master/app/auth",
+      "baseUrl": "http://localhost:8180/realms/master/app/auth",
       "redirectUris": [
-        "http://localhost:8180/auth/realms/master/app/auth/*"
+        "http://localhost:8180/*"
       ],
-      "adminUrl": "http://localhost:8180/auth/realms/master/app/admin",
+      "adminUrl": "http://localhost:8180/realms/master/app/admin",
       "secret": "password"
     },
     {
@@ -212,7 +212,7 @@
       "enabled": true,
 
       "redirectUris": [
-        "http://localhost:8180/auth/realms/master/app/*"
+        "http://localhost:8180/realms/master/app/*"
       ],
       "secret": "password",
       "fullScopeAllowed": "false"
@@ -222,9 +222,9 @@
       "enabled": true,
       "consentRequired": true,
 
-      "baseUrl": "http://localhost:8180/auth/realms/master/app/auth",
+      "baseUrl": "http://localhost:8180/realms/master/app/auth",
       "redirectUris": [
-        "http://localhost:8180/auth/realms/master/app/*"
+        "http://localhost:8180/realms/master/app/*"
       ],
       "secret": "password"
     },
@@ -561,7 +561,6 @@
           },
           "attributes": {
             "level2Attribute": ["true"]
-
           }
         }
       ]
@@ -591,5 +590,5 @@
   "internationalizationEnabled": true,
   "supportedLocales": ["en", "de"],
   "defaultLocale": "en",
-  "eventsListeners": ["jboss-logging", "event-queue"]
+  "eventsListeners": ["jboss-logging"]
 }
