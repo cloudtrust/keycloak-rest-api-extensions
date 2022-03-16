@@ -1,6 +1,5 @@
 package io.cloudtrust.keycloak.services.resource.api.admin;
 
-import io.cloudtrust.keycloak.services.resource.api.ApiConfig;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
@@ -19,13 +18,10 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 
 public class RealmsAdminResource extends org.keycloak.services.resources.admin.RealmsAdminResource {
-    private ApiConfig apiConfig;
-
-    public RealmsAdminResource(AdminAuth auth, TokenManager tokenManager, KeycloakSession session, ApiConfig apiConfig) {
+    public RealmsAdminResource(AdminAuth auth, TokenManager tokenManager, KeycloakSession session) {
         super(auth, tokenManager);
         this.session = session;
         this.clientConnection = session.getContext().getConnection();
-        this.apiConfig = apiConfig;
     }
 
     /**
@@ -37,14 +33,12 @@ public class RealmsAdminResource extends org.keycloak.services.resources.admin.R
      */
     @Path("{realm}")
     @Override
-    public org.keycloak.services.resources.admin.RealmAdminResource getRealmAdmin(@Context final HttpHeaders headers,
-                                                                                  @PathParam("realm") final String name) {
+    public org.keycloak.services.resources.admin.RealmAdminResource getRealmAdmin(@Context final HttpHeaders headers, @PathParam("realm") final String name) {
         RealmManager realmManager = new RealmManager(session);
         RealmModel realm = realmManager.getRealmByName(name);
         if (realm == null) throw new NotFoundException("Realm not found.");
 
-        if (!auth.getRealm().equals(realmManager.getKeycloakAdminstrationRealm())
-                && !auth.getRealm().equals(realm)) {
+        if (!auth.getRealm().equals(realmManager.getKeycloakAdminstrationRealm()) && !auth.getRealm().equals(realm)) {
             throw new ForbiddenException();
         }
         AdminPermissionEvaluator realmAuth = AdminPermissions.evaluator(session, realm, auth);
