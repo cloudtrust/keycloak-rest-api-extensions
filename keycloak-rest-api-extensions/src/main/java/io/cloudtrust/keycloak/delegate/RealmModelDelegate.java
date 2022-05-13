@@ -14,6 +14,7 @@ import org.keycloak.models.IdentityProviderMapperModel;
 import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.models.OAuth2DeviceConfig;
 import org.keycloak.models.OTPPolicy;
+import org.keycloak.models.ParConfig;
 import org.keycloak.models.PasswordPolicy;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RequiredActionProviderModel;
@@ -26,7 +27,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 public class RealmModelDelegate implements RealmModel {
-    private RealmModel delegate;
+    private final RealmModel delegate;
 
     public RealmModelDelegate(RealmModel delegate) {
         this.delegate = delegate;
@@ -1276,8 +1277,8 @@ public class RealmModelDelegate implements RealmModel {
     }
 
     @Override
-    public void patchRealmLocalizationTexts(String locale, Map<String, String> localizationTexts) {
-        delegate.patchRealmLocalizationTexts(locale, localizationTexts);;
+    public void createOrUpdateRealmLocalizationTexts(String locale, Map<String, String> localizationTexts) {
+        this.delegate.createOrUpdateRealmLocalizationTexts(locale, localizationTexts);
     }
 
     @Override
@@ -1338,5 +1339,10 @@ public class RealmModelDelegate implements RealmModel {
     @Override
     public void decreaseRemainingCount(ClientInitialAccessModel clientInitialAccess) {
         delegate.decreaseRemainingCount(clientInitialAccess);
+    }
+
+    @Override
+    public ParConfig getParPolicy() {
+        return this.delegate.getParPolicy();
     }
 }

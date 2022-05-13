@@ -1,12 +1,15 @@
 package io.cloudtrust.keycloak.services.api.admin;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.cloudtrust.keycloak.AbstractRestApiExtensionTest;
 import io.cloudtrust.keycloak.representations.idm.DeletableUserRepresentation;
 import io.cloudtrust.keycloak.services.resource.api.model.EmailInfo;
-import io.cloudtrust.keycloak.test.ApiTest;
+import io.cloudtrust.keycloak.test.container.KeycloakDeploy;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicNameValuePair;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -16,18 +19,20 @@ import java.util.List;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class AdminRootTest extends ApiTest {
+@ExtendWith(KeycloakDeploy.class)
+class AdminRootTest extends AbstractRestApiExtensionTest {
     private static final TypeReference<List<DeletableUserRepresentation>> deletableUserListType = new TypeReference<List<DeletableUserRepresentation>>() {
     };
     private static final TypeReference<List<EmailInfo>> emailInfoListType = new TypeReference<List<EmailInfo>>() {
     };
 
-    protected <T> T queryApi(TypeReference<T> typeRef, String method, String apiPath, List<NameValuePair> params) throws IOException, URISyntaxException {
-        return mapper.readValue(callApi(method, apiPath, params), typeRef);
+    @BeforeEach
+    public void initToken() {
+        this.initializeToken();
     }
 
     @Test
-    public void testNoUserDeclinedTOU() throws IOException, URISyntaxException {
+    void testNoUserDeclinedTOU() throws IOException, URISyntaxException {
         // To write a test where there are some users having declined TOU for more than the configured delay,
         // we should create sample users with a given creation timestamp far in the past
         List<NameValuePair> params = Collections.emptyList();
@@ -36,7 +41,7 @@ public class AdminRootTest extends ApiTest {
     }
 
     @Test
-    public void testGetSupportInformation() throws IOException, URISyntaxException {
+    void testGetSupportInformation() throws IOException, URISyntaxException {
         List<NameValuePair> params = Collections.singletonList(new BasicNameValuePair("email", "john-doh@localhost"));
         List<EmailInfo> emailInfo = queryApi(emailInfoListType, "GET", "/realms/master/api/admin/support-infos", params);
         assertThat(emailInfo.size(), is(1));

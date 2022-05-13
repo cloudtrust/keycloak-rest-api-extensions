@@ -60,7 +60,7 @@ public class AccountLoader extends org.keycloak.services.resources.account.Accou
 
         if (HttpMethod.OPTIONS.equals(request.getHttpMethod())) {
             return new FixedCorsPreflightService(request);
-        } else if ((accepts.contains(MediaType.APPLICATION_JSON_TYPE) || MediaType.APPLICATION_JSON_TYPE.equals(content)) && !request.getUri().getPath().endsWith("keycloak.json")) {
+        } else if ((accepts.contains(MediaType.APPLICATION_JSON_TYPE) || MediaType.APPLICATION_JSON_TYPE.equals(content)) && !session.getContext().getUri().getPath().endsWith("keycloak.json")) {
             AppAuthManager.BearerTokenAuthenticator bearerAuthenticator = new AppAuthManager.BearerTokenAuthenticator(session);
             AuthenticationManager.AuthResult authResult = bearerAuthenticator
                     .setConnection(session.getContext().getConnection())

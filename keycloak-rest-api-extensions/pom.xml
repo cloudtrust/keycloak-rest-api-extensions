@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.cloudtrust</groupId>
         <artifactId>keycloak-rest-api-extensions-parent</artifactId>
-        <version>14.0.0</version>
+        <version>18.0.0</version>
     </parent>
 
     <artifactId>keycloak-rest-api-extensions</artifactId>
@@ -69,6 +69,23 @@
             <artifactId>javax.persistence-api</artifactId>
             <version>${persistence-api.version}</version>
             <scope>provided</scope>
+        </dependency>
+        <!--dependency>
+            <groupId>io.cloudtrust</groupId>
+            <artifactId>kc-cloudtrust-test-tools</artifactId>
+            <version>${keycloak.version}</version>
+            <scope>test</scope>
+        </dependency-->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.8.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
