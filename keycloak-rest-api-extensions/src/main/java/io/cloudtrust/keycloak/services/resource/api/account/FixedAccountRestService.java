@@ -1,14 +1,14 @@
 package io.cloudtrust.keycloak.services.resource.api.account;
 
+import io.cloudtrust.keycloak.UserUtils;
 import io.cloudtrust.keycloak.email.model.UserWithOverridenEmail;
 import org.apache.commons.lang3.StringUtils;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.HttpResponse;
-import org.keycloak.authentication.actiontoken.execactions.ExecuteActionsActionToken;
 import org.keycloak.common.Profile;
 import org.keycloak.common.enums.AccountRestApiVersion;
-import org.keycloak.common.util.Time;
 import org.keycloak.email.EmailException;
 import org.keycloak.email.EmailTemplateProvider;
 import org.keycloak.email.freemarker.beans.ProfileBean;
@@ -44,22 +44,24 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This is a copy of org.keycloak.services.resources.account.AccountRestService that fixes a bug with CORS
  * The inspiration for the fix came from org.keycloak.services.resources.admin.AdminRoot.
  */
 public class FixedAccountRestService extends AccountRestService {
-    private KeycloakSession session;
-    private Auth auth;
-    private EventBuilder event;
+    private static final Logger logger = Logger.getLogger(FixedAccountRestService.class);
 
-    private UserModel user;
-    private RealmModel realm;
+    private final KeycloakSession session;
+    private final Auth auth;
+    private final EventBuilder event;
+
+    private final UserModel user;
+    private final RealmModel realm;
 
     @Context
     private HttpRequest request;
@@ -83,19 +85,20 @@ public class FixedAccountRestService extends AccountRestService {
     }
 
     /**
-     * @param rep
-     * @return
+     * @param rep new account
+     * @return REST response
      */
     @Path("/")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @NoCache
+    @Override
     public Response updateAccount(UserRepresentation rep) {
         boolean emailUpdated = user != null && rep.getEmail() != null && !rep.getEmail().equalsIgnoreCase(user.getEmail());
         Response resp = super.updateAccount(rep);
         if (emailUpdated && resp.getStatus() < 400) {
-            /**
+            /*
              * EmailVerified is not updatable through KC API in version 14.0
              */
             user.setEmailVerified(false);
@@ -142,35 +145,31 @@ public class FixedAccountRestService extends AccountRestService {
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     public Response executeActionsEmail(@QueryParam("lifespan") Integer lifespan, List<String> actions) {
-        if (user.getEmail() == null) {
-            return ErrorResponse.error("User email missing", Status.BAD_REQUEST);
-        }
-
         if (!user.isEnabled()) {
             throw new WebApplicationException(
                     ErrorResponse.error("User is disabled", Status.BAD_REQUEST));
         }
 
-        if (lifespan == null) {
-            lifespan = realm.getActionTokenGeneratedByAdminLifespan();
+        String emailToValidate = StringUtils.trim(user.getFirstAttribute(UserUtils.ATTRB_EMAIL_TO_VALIDATE));
+        if (StringUtils.isNotBlank(emailToValidate) && actions.contains(UserUtils.VERIFY_EMAIL_ACTION)) {
+            if (actions.size() > 1) {
+                String currentEmail = user.getEmail();
+                user.setEmail(emailToValidate);
+                // Verify email action should be processed in a separate action because target email is not the same
+                try (Response resp = executeActionsEmail(lifespan, Collections.singletonList(UserUtils.VERIFY_EMAIL_ACTION))) {
+                    user.setEmail(currentEmail);
+                    if (resp.getStatus() >= 400) {
+                        return resp;
+                    }
+                }
+                actions.remove(UserUtils.VERIFY_EMAIL_ACTION);
+            }
+        } else if (StringUtils.isBlank(user.getEmail())) {
+            return ErrorResponse.error("User email missing", Status.BAD_REQUEST);
         }
-        int expiration = Time.currentTime() + lifespan;
-        String redirectUri = null;
-        String clientId = Constants.ACCOUNT_MANAGEMENT_CLIENT_ID;
-        ExecuteActionsActionToken token = new ExecuteActionsActionToken(user.getId(), expiration, actions, redirectUri, clientId);
 
         try {
-            UriBuilder builder = LoginActionsService.actionTokenProcessor(session.getContext().getUri());
-            builder.queryParam("key", token.serialize(session, realm, session.getContext().getUri()));
-
-            String link = builder.build(realm.getName()).toString();
-
-            this.session.getProvider(EmailTemplateProvider.class)
-                    .setAttribute(Constants.TEMPLATE_ATTR_REQUIRED_ACTIONS, token.getRequiredActions())
-                    .setRealm(realm)
-                    .setUser(user)
-                    .sendExecuteActions(link, TimeUnit.SECONDS.toMinutes(lifespan));
-
+            UserUtils.sendExecuteActionsEmail(session, user, actions, lifespan, Constants.ACCOUNT_MANAGEMENT_CLIENT_ID);
             return Response.noContent().build();
         } catch (EmailException e) {
             ServicesLogger.LOGGER.failedToSendActionsEmail(e);
@@ -210,7 +209,7 @@ public class FixedAccountRestService extends AccountRestService {
         attributes.put("user", new ProfileBean(user));
         attributes.put("realmName", realm.getDisplayName());
         attributes.put("link", link);
-        parameters.forEach(attributes::put);
+        attributes.putAll(parameters);
 
         try {
             emailProvider.send(subjectFormatKey, template, attributes);

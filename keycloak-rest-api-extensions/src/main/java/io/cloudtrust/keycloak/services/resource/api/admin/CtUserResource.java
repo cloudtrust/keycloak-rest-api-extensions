@@ -1,14 +1,12 @@
 package io.cloudtrust.keycloak.services.resource.api.admin;
 
+import io.cloudtrust.keycloak.UserUtils;
 import io.cloudtrust.keycloak.email.EmailSender;
 import io.cloudtrust.keycloak.email.model.EmailModel;
 import io.cloudtrust.keycloak.email.model.RealmWithOverridenEmailTheme;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
-import org.keycloak.authentication.actiontoken.execactions.ExecuteActionsActionToken;
-import org.keycloak.common.util.Time;
 import org.keycloak.email.EmailException;
-import org.keycloak.email.EmailTemplateProvider;
 import org.keycloak.email.freemarker.beans.ProfileBean;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.models.ClientModel;
@@ -39,7 +37,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class CtUserResource extends UserResource {
     private static final Logger logger = Logger.getLogger(CtUserResource.class);
@@ -128,27 +125,14 @@ public class CtUserResource extends UserResource {
             return ErrorResponse.error("User email missing", Response.Status.BAD_REQUEST);
         }
 
-        if (!user.isEnabled()) {
-            throw new WebApplicationException(ErrorResponse.error("User is disabled", Response.Status.BAD_REQUEST));
-        }
-
-        if (redirectUri != null && clientId == null) {
-            throw new WebApplicationException(ErrorResponse.error("Client id missing", Response.Status.BAD_REQUEST));
-        }
+        validateUser(user);
+        validateRedirectUriAndClient(redirectUri, clientId);
 
         if (clientId == null) {
             clientId = Constants.ACCOUNT_MANAGEMENT_CLIENT_ID;
         }
 
-        ClientModel client = realm.getClientByClientId(clientId);
-        if (client == null) {
-            logger.debugf("Client %s doesn't exist", clientId);
-            throw new WebApplicationException(ErrorResponse.error("Client doesn't exist", Response.Status.BAD_REQUEST));
-        }
-        if (!client.isEnabled()) {
-            logger.debugf("Client %s is not enabled", clientId);
-            throw new WebApplicationException(ErrorResponse.error("Client is not enabled", Response.Status.BAD_REQUEST));
-        }
+        ClientModel client = getEnabledClientOrFail(clientId);
 
         String redirect;
         if (redirectUri != null) {
@@ -171,29 +155,15 @@ public class CtUserResource extends UserResource {
             }
         }
 
-        if (lifespan == null) {
-            lifespan = realm.getActionTokenGeneratedByAdminLifespan();
-        }
-        int expiration = Time.currentTime() + lifespan;
-        ExecuteActionsActionToken token = new ExecuteActionsActionToken(user.getId(), expiration, actions, redirectUri, clientId);
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("custom1", custom1);
+        attributes.put("custom2", custom2);
+        attributes.put("custom3", custom3);
+        attributes.put("custom4", custom4);
+        attributes.put("custom5", custom5);
 
         try {
-            UriBuilder builder = LoginActionsService.actionTokenProcessor(session.getContext().getUri());
-            builder.queryParam("key", token.serialize(session, realm, session.getContext().getUri()));
-
-            String link = builder.build(realm.getName()).toString();
-
-            this.session.getProvider(EmailTemplateProvider.class)
-                    .setAttribute(Constants.TEMPLATE_ATTR_REQUIRED_ACTIONS, token.getRequiredActions())
-                    .setAttribute("custom1", custom1)
-                    .setAttribute("custom2", custom2)
-                    .setAttribute("custom3", custom3)
-                    .setAttribute("custom4", custom4)
-                    .setAttribute("custom5", custom5)
-                    .setRealm(realm).setUser(user)
-                    //.send()
-                    .sendExecuteActions(link, TimeUnit.SECONDS.toMinutes(lifespan));
-
+            UserUtils.sendExecuteActionsEmail(session, user, actions, lifespan, clientId, attributes);
             adminEvent.operation(OperationType.ACTION).resourcePath(session.getContext().getUri()).success();
 
             return Response.noContent().build();
@@ -203,5 +173,30 @@ public class CtUserResource extends UserResource {
         } finally {
             session.getContext().setRealm(realm);
         }
+    }
+
+    private void validateUser(UserModel user) {
+        if (!user.isEnabled()) {
+            throw new WebApplicationException(ErrorResponse.error("User is disabled", Response.Status.BAD_REQUEST));
+        }
+    }
+
+    private void validateRedirectUriAndClient(String redirectUri, String clientId) {
+        if (redirectUri != null && clientId == null) {
+            throw new WebApplicationException(ErrorResponse.error("Client id missing", Response.Status.BAD_REQUEST));
+        }
+    }
+
+    private ClientModel getEnabledClientOrFail(String clientId) {
+        ClientModel client = realm.getClientByClientId(clientId);
+        if (client == null) {
+            logger.debugf("Client %s doesn't exist", clientId);
+            throw new WebApplicationException(ErrorResponse.error("Client doesn't exist", Response.Status.BAD_REQUEST));
+        }
+        if (!client.isEnabled()) {
+            logger.debugf("Client %s is not enabled", clientId);
+            throw new WebApplicationException(ErrorResponse.error("Client is not enabled", Response.Status.BAD_REQUEST));
+        }
+        return client;
     }
 }

@@ -17,7 +17,6 @@ import org.keycloak.services.resources.admin.AdminAuth;
 import org.keycloak.services.resources.admin.AdminCorsPreflightService;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 import org.keycloak.services.resources.admin.permissions.AdminPermissions;
-import org.keycloak.services.resources.admin.permissions.UserPermissionEvaluator;
 
 import javax.persistence.EntityManager;
 import javax.ws.rs.BadRequestException;
@@ -29,6 +28,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -80,7 +80,7 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
      */
     @Path("expired-tou-acceptance")
     @GET
-    @Produces(javax.ws.rs.core.MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
     public List<DeletableUserRepresentation> expiredTermsOfUseAcceptance(@Context final HttpRequest request) {
         AdminAuth auth = authenticateRealmAdminRequest(request.getHttpHeaders());
         if (auth == null) {
@@ -148,6 +148,7 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
         }
 
         EntityManager em = session.getProvider(JpaConnectionProvider.class).getEntityManager();
+        @SuppressWarnings("unchecked")
         List<Object[]> result = em.createNativeQuery("select r.NAME, ue.CREATED_TIMESTAMP "
                         + "from USER_ENTITY ue "
                         + "inner join REALM r ON r.ID=ue.REALM_ID "
