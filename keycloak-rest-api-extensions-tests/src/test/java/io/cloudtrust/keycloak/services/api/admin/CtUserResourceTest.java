@@ -3,6 +3,7 @@ package io.cloudtrust.keycloak.services.api.admin;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetupTest;
 import io.cloudtrust.keycloak.AbstractRestApiExtensionTest;
+import io.cloudtrust.keycloak.UserUtils;
 import io.cloudtrust.keycloak.test.container.KeycloakDeploy;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.HttpResponseException;
@@ -29,7 +30,7 @@ import static org.hamcrest.Matchers.nullValue;
 class CtUserResourceTest extends AbstractRestApiExtensionTest {
     private static GreenMail greenMail;
 
-    private static final String[] ACTIONS = new String[]{"VERIFY_EMAIL"};
+    private static final String[] ACTIONS = new String[]{UserUtils.VERIFY_EMAIL_ACTION};
     private static final String EXECUTE_ACTIONS_EMAIL_FMT = "/realms/master/api/admin/realms/test/users/%s/execute-actions-email";
 
     @BeforeAll
@@ -77,7 +78,7 @@ class CtUserResourceTest extends AbstractRestApiExtensionTest {
         MimeMessage mail = greenMail.getReceivedMessages()[nbReceived];
         assertThat(mail, is(not(nullValue())));
         String mailContent = getMailContent(mail);
-        assertThat(mailContent, containsString("Verify Email"));
+        assertThat(mailContent, containsString("ct-verify-email"));
     }
 
     private void failureCase(String queryParams, int expectedHttpStatusCode) throws IOException, URISyntaxException {

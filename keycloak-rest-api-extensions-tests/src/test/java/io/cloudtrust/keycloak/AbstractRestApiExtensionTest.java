@@ -14,7 +14,7 @@ public abstract class AbstractRestApiExtensionTest extends AbstractInKeycloakTes
     public void setupTest() throws IOException, InjectionException {
         this.injectComponents();
         this.createRealm("/testrealm.json");
-        this.initializeToken();
+        this.api().initToken();
         // Clean events
         this.events().activate("test");
         this.events().clear();
