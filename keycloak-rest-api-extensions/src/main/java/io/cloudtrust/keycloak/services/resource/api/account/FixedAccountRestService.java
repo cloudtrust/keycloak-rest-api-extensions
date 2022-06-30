@@ -32,6 +32,7 @@ import org.keycloak.services.resources.account.AccountRestService;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -217,5 +218,25 @@ public class FixedAccountRestService extends AccountRestService {
         } catch (EmailException e) {
             throw new WebApplicationException("Can't send mail to " + userWithEmail.getEmail(), e);
         }
+    }
+
+    /**
+     * Check if email is verified...
+     * @param request
+     * @param response
+     * @return Response with a NO_CONTENT (204) status code if email is not verified, ACCEPTED (202) otherwise
+     */
+    @Path("/email-verified")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response isEmailVerified(@Context final HttpRequest request, @Context HttpResponse response) {
+        Cors.add(request).allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().build(response);
+        if (!Profile.isFeatureEnabled(Profile.Feature.ACCOUNT_API)) {
+            throw new NotFoundException();
+        }
+        if (!this.user.isEmailVerified()) {
+            return Response.noContent().build();
+        }
+        return Response.accepted().entity("").build();
     }
 }
