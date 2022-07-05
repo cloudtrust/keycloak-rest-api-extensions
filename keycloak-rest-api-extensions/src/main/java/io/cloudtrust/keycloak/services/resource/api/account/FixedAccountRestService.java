@@ -1,6 +1,6 @@
 package io.cloudtrust.keycloak.services.resource.api.account;
 
-import io.cloudtrust.keycloak.UserUtils;
+import io.cloudtrust.keycloak.ExecuteActionsEmailHelper;
 import io.cloudtrust.keycloak.email.model.UserWithOverridenEmail;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
@@ -150,26 +150,27 @@ public class FixedAccountRestService extends AccountRestService {
                     ErrorResponse.error("User is disabled", Status.BAD_REQUEST));
         }
 
-        String emailToValidate = StringUtils.trim(user.getFirstAttribute(UserUtils.ATTRB_EMAIL_TO_VALIDATE));
-        if (StringUtils.isNotBlank(emailToValidate) && actions.contains(UserUtils.VERIFY_EMAIL_ACTION)) {
+        String emailToValidate = StringUtils.trim(user.getFirstAttribute(ExecuteActionsEmailHelper.ATTRB_EMAIL_TO_VALIDATE));
+        if (StringUtils.isNotBlank(emailToValidate) && actions.contains(ExecuteActionsEmailHelper.VERIFY_EMAIL_ACTION)) {
             if (actions.size() > 1) {
                 String currentEmail = user.getEmail();
                 user.setEmail(emailToValidate);
                 // Verify email action should be processed in a separate action because target email is not the same
-                try (Response resp = executeActionsEmail(lifespan, Collections.singletonList(UserUtils.VERIFY_EMAIL_ACTION))) {
+                try (Response resp = executeActionsEmail(lifespan, Collections.singletonList(ExecuteActionsEmailHelper.VERIFY_EMAIL_ACTION))) {
                     user.setEmail(currentEmail);
                     if (resp.getStatus() >= 400) {
                         return resp;
                     }
                 }
-                actions.remove(UserUtils.VERIFY_EMAIL_ACTION);
+                actions.remove(ExecuteActionsEmailHelper.VERIFY_EMAIL_ACTION);
             }
         } else if (StringUtils.isBlank(user.getEmail())) {
             return ErrorResponse.error("User email missing", Status.BAD_REQUEST);
         }
 
         try {
-            UserUtils.sendExecuteActionsEmail(session, user, actions, lifespan, Constants.ACCOUNT_MANAGEMENT_CLIENT_ID);
+            ExecuteActionsEmailHelper.sendExecuteActionsEmail(session, realm, user, actions, lifespan, null,
+                    Constants.ACCOUNT_MANAGEMENT_CLIENT_ID, null);
             return Response.noContent().build();
         } catch (EmailException e) {
             ServicesLogger.LOGGER.failedToSendActionsEmail(e);

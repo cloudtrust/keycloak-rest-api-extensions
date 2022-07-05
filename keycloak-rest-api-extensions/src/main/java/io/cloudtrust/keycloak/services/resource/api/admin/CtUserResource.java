@@ -1,6 +1,6 @@
 package io.cloudtrust.keycloak.services.resource.api.admin;
 
-import io.cloudtrust.keycloak.UserUtils;
+import io.cloudtrust.keycloak.ExecuteActionsEmailHelper;
 import io.cloudtrust.keycloak.email.EmailSender;
 import io.cloudtrust.keycloak.email.model.EmailModel;
 import io.cloudtrust.keycloak.email.model.RealmWithOverridenEmailTheme;
@@ -163,7 +163,7 @@ public class CtUserResource extends UserResource {
         attributes.put("custom5", custom5);
 
         try {
-            UserUtils.sendExecuteActionsEmail(session, user, actions, lifespan, clientId, attributes);
+            ExecuteActionsEmailHelper.sendExecuteActionsEmail(session, realm, user, actions, lifespan, null, clientId, attributes);
             adminEvent.operation(OperationType.ACTION).resourcePath(session.getContext().getUri()).success();
 
             return Response.noContent().build();

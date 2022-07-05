@@ -1,7 +1,7 @@
 package io.cloudtrust.keycloak.authentication.requiredactions;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.cloudtrust.keycloak.UserUtils;
+import io.cloudtrust.keycloak.ExecuteActionsEmailHelper;
 import io.cloudtrust.keycloak.email.model.UserWithOverridenEmail;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
@@ -124,7 +124,8 @@ public class VerifyEmailRequiredAction implements RequiredActionProvider, Requir
 
     private void sendVerifyEmail(KeycloakSession session, UserModel user, AuthenticationSessionModel authSession, EventBuilder event) throws UriBuilderException, IllegalArgumentException {
         try {
-            UserUtils.sendExecuteActionsEmail(session, user, Collections.singletonList(REQUIRED_ACTION_ID), null, null);
+            ExecuteActionsEmailHelper.sendExecuteActionsEmail(session, session.getContext().getRealm(), user,
+                    Collections.singletonList(REQUIRED_ACTION_ID), null, null, null, null);
             event.success();
         } catch (EmailException e) {
             logger.error("Failed to send verification email", e);
