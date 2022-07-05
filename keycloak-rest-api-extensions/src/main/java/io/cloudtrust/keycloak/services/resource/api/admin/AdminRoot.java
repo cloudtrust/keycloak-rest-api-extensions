@@ -152,7 +152,7 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
         List<Object[]> result = em.createNativeQuery("select r.NAME, ue.CREATED_TIMESTAMP "
                         + "from USER_ENTITY ue "
                         + "inner join REALM r ON r.ID=ue.REALM_ID "
-                        + "where ue.EMAIL=:email")
+                        + "where lower(ue.EMAIL)=lower(:email)")
                 .setParameter("email", email)
                 .getResultList();
         if (result.isEmpty()) {
