@@ -28,7 +28,7 @@ class AdminRootTest extends AbstractRestApiExtensionTest {
 
     @BeforeEach
     public void initToken() {
-        this.initializeToken();
+        this.api().initToken();
     }
 
     @Test
@@ -36,14 +36,14 @@ class AdminRootTest extends AbstractRestApiExtensionTest {
         // To write a test where there are some users having declined TOU for more than the configured delay,
         // we should create sample users with a given creation timestamp far in the past
         List<NameValuePair> params = Collections.emptyList();
-        List<DeletableUserRepresentation> users = queryApi(deletableUserListType, "GET", "/realms/master/api/admin/expired-tou-acceptance", params);
+        List<DeletableUserRepresentation> users = api().query(deletableUserListType, "GET", "/realms/master/api/admin/expired-tou-acceptance", params);
         assertThat(users.size(), is(0));
     }
 
     @Test
     void testGetSupportInformation() throws IOException, URISyntaxException {
-        List<NameValuePair> params = Collections.singletonList(new BasicNameValuePair("email", "john-doh@localhost"));
-        List<EmailInfo> emailInfo = queryApi(emailInfoListType, "GET", "/realms/master/api/admin/support-infos", params);
+        List<NameValuePair> params = Collections.singletonList(new BasicNameValuePair("email", "john-doh@LOCALHOST"));
+        List<EmailInfo> emailInfo = api().query(emailInfoListType, "GET", "/realms/master/api/admin/support-infos", params);
         assertThat(emailInfo.size(), is(1));
     }
 }
