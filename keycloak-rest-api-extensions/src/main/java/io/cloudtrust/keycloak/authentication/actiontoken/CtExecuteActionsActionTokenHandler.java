@@ -1,6 +1,6 @@
 package io.cloudtrust.keycloak.authentication.actiontoken;
 
-import io.cloudtrust.keycloak.UserUtils;
+import io.cloudtrust.keycloak.ExecuteActionsEmailHelper;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 import org.keycloak.TokenVerifier;
@@ -112,9 +112,9 @@ public class CtExecuteActionsActionTokenHandler extends AbstractActionTokenHandl
         if (StringUtils.isBlank(emailClaim)) {
             return false;
         }
-        if (emailClaim.equalsIgnoreCase(user.getFirstAttribute(UserUtils.ATTRB_EMAIL_TO_VALIDATE))) {
+        if (emailClaim.equalsIgnoreCase(user.getFirstAttribute(ExecuteActionsEmailHelper.ATTRB_EMAIL_TO_VALIDATE))) {
             user.setEmail(emailClaim);
-            user.removeAttribute(UserUtils.ATTRB_EMAIL_TO_VALIDATE);
+            user.removeAttribute(ExecuteActionsEmailHelper.ATTRB_EMAIL_TO_VALIDATE);
             user.setEmailVerified(true);
             return true;
         }
