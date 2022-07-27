@@ -163,7 +163,7 @@ public class CtUserResource extends UserResource {
         attributes.put("custom5", custom5);
 
         try {
-            ExecuteActionsEmailHelper.sendExecuteActionsEmail(session, realm, user, actions, lifespan, null, clientId, attributes);
+            ExecuteActionsEmailHelper.sendExecuteActionsEmail(session, realm, user, actions, lifespan, redirectUri, clientId, attributes);
             adminEvent.operation(OperationType.ACTION).resourcePath(session.getContext().getUri()).success();
 
             return Response.noContent().build();

@@ -108,9 +108,10 @@ public class CtExecuteActionsActionTokenHandler extends AbstractActionTokenHandl
     }
 
     private boolean setEmailVerified(UserModel user, CtExecuteActionsActionToken token) {
-        String emailClaim = token.getEmailToValidate();
+        boolean isCtVerifyEmail = token.getRequiredActions().contains(ExecuteActionsEmailHelper.VERIFY_EMAIL_ACTION);
+        String emailClaim = StringUtils.defaultString(token.getEmailToValidate(), user.getEmail());
         if (StringUtils.isBlank(emailClaim)) {
-            return false;
+            return !isCtVerifyEmail;
         }
         if (emailClaim.equalsIgnoreCase(user.getFirstAttribute(ExecuteActionsEmailHelper.ATTRB_EMAIL_TO_VALIDATE))) {
             user.setEmail(emailClaim);
