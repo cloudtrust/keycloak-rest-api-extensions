@@ -1,6 +1,7 @@
 package io.cloudtrust.keycloak.services.resource.api.account;
 
 import io.cloudtrust.keycloak.ExecuteActionsEmailHelper;
+import io.cloudtrust.keycloak.delegate.CtUserModelDelegate;
 import io.cloudtrust.keycloak.email.model.UserWithOverridenEmail;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
@@ -145,6 +146,10 @@ public class FixedAccountRestService extends AccountRestService {
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     public Response executeActionsEmail(@QueryParam("lifespan") Integer lifespan, List<String> actions) {
+        return executeActionsEmail(this.user, lifespan, actions);
+    }
+
+    private Response executeActionsEmail(UserModel user, Integer lifespan, List<String> actions) {
         if (!user.isEnabled()) {
             throw new WebApplicationException(
                     ErrorResponse.error("User is disabled", Status.BAD_REQUEST));
@@ -153,11 +158,10 @@ public class FixedAccountRestService extends AccountRestService {
         String emailToValidate = StringUtils.trim(user.getFirstAttribute(ExecuteActionsEmailHelper.ATTRB_EMAIL_TO_VALIDATE));
         if (StringUtils.isNotBlank(emailToValidate) && actions.contains(ExecuteActionsEmailHelper.VERIFY_EMAIL_ACTION)) {
             if (actions.size() > 1) {
-                String currentEmail = user.getEmail();
-                user.setEmail(emailToValidate);
+                UserModel userDelegate = new CtUserModelDelegate(user);
+                userDelegate.setEmail(emailToValidate);
                 // Verify email action should be processed in a separate action because target email is not the same
-                try (Response resp = executeActionsEmail(lifespan, Collections.singletonList(ExecuteActionsEmailHelper.VERIFY_EMAIL_ACTION))) {
-                    user.setEmail(currentEmail);
+                try (Response resp = executeActionsEmail(userDelegate, lifespan, Collections.singletonList(ExecuteActionsEmailHelper.VERIFY_EMAIL_ACTION))) {
                     if (resp.getStatus() >= 400) {
                         return resp;
                     }
