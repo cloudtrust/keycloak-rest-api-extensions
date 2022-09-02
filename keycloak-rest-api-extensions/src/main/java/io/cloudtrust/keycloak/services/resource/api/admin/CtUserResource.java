@@ -71,6 +71,11 @@ public class CtUserResource extends UserResource {
             throw new WebApplicationException(ErrorResponse.error("User is disabled", Response.Status.BAD_REQUEST));
         }
 
+        Response error = setEmailTheme(emailModel.getTheming().getThemeRealmName());
+        if (error != null){
+            return error;
+        }
+
         Locale locale = session.getContext().resolveLocale(user);
 
         UriBuilder builder = LoginActionsService.loginActionsBaseUrl(session.getContext().getUri());
@@ -142,17 +147,9 @@ public class CtUserResource extends UserResource {
             }
         }
 
-        if (!StringUtils.isBlank(themeRealmName)) {
-            RealmManager realmManager = new RealmManager(session);
-            RealmModel themeRealm = realmManager.getRealmByName(themeRealmName);
-            if (themeRealm == null) {
-                return ErrorResponse.error("Invalid realm name", Response.Status.BAD_REQUEST);
-            }
-            if (themeRealm.getEmailTheme() != null) {
-                RealmWithOverridenEmailTheme overridenRealm = new RealmWithOverridenEmailTheme(realm);
-                overridenRealm.setEmailTheme(themeRealm.getEmailTheme());
-                session.getContext().setRealm(overridenRealm);
-            }
+        Response error = setEmailTheme(themeRealmName);
+        if (error != null){
+            return error;
         }
 
         Map<String, String> attributes = new HashMap<>();
@@ -198,5 +195,21 @@ public class CtUserResource extends UserResource {
             throw new WebApplicationException(ErrorResponse.error("Client is not enabled", Response.Status.BAD_REQUEST));
         }
         return client;
+    }
+
+    private Response setEmailTheme(String themeRealmName){
+        if (!StringUtils.isBlank(themeRealmName)) {
+            RealmManager realmManager = new RealmManager(session);
+            RealmModel themeRealm = realmManager.getRealmByName(themeRealmName);
+            if (themeRealm == null) {
+                return ErrorResponse.error("Invalid realm name", Response.Status.BAD_REQUEST);
+            }
+            if (themeRealm.getEmailTheme() != null) {
+                RealmWithOverridenEmailTheme overridenRealm = new RealmWithOverridenEmailTheme(realm);
+                overridenRealm.setEmailTheme(themeRealm.getEmailTheme());
+                session.getContext().setRealm(overridenRealm);
+            }
+        }
+        return null;
     }
 }

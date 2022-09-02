@@ -4,11 +4,20 @@ import java.util.List;
 import java.util.Map;
 
 public class ThemingModel {
+    private String themeRealmName;
     private String locale;
     private String subjectKey;
     private List<String> subjectParams;
     private String template;
     private Map<String, String> templateParams;
+
+    public String getThemeRealmName(){
+        return themeRealmName;
+    }
+
+    public void setThemeRealmName(String themeRealmName){
+        this.themeRealmName = themeRealmName;
+    }
 
     public String getLocale() {
         return locale;
