@@ -1,6 +1,7 @@
 package io.cloudtrust.keycloak.services.resource.api.admin;
 
 import io.cloudtrust.keycloak.ExecuteActionsEmailHelper;
+import io.cloudtrust.keycloak.delegate.CtUserModelDelegate;
 import io.cloudtrust.keycloak.email.EmailSender;
 import io.cloudtrust.keycloak.email.model.EmailModel;
 import io.cloudtrust.keycloak.email.model.RealmWithOverridenEmailTheme;
@@ -72,7 +73,7 @@ public class CtUserResource extends UserResource {
         }
 
         Response error = setEmailTheme(emailModel.getTheming().getThemeRealmName());
-        if (error != null){
+        if (error != null) {
             return error;
         }
 
@@ -137,6 +138,22 @@ public class CtUserResource extends UserResource {
             clientId = Constants.ACCOUNT_MANAGEMENT_CLIENT_ID;
         }
 
+        Map<String, String> attributes = new HashMap<>();
+        attributes.put("custom1", custom1);
+        attributes.put("custom2", custom2);
+        attributes.put("custom3", custom3);
+        attributes.put("custom4", custom4);
+        attributes.put("custom5", custom5);
+
+        UserModel targetUser = this.user;
+        String emailToValidate = StringUtils.trim(user.getFirstAttribute(ExecuteActionsEmailHelper.ATTRB_EMAIL_TO_VALIDATE));
+        if (StringUtils.isNotBlank(emailToValidate) && actions.contains(ExecuteActionsEmailHelper.VERIFY_EMAIL_ACTION)) {
+            targetUser = new CtUserModelDelegate(user);
+            targetUser.setEmail(emailToValidate);
+        } else if (StringUtils.isBlank(user.getEmail())) {
+            return ErrorResponse.error("User email missing", Response.Status.BAD_REQUEST);
+        }
+
         ClientModel client = getEnabledClientOrFail(clientId);
 
         String redirect;
@@ -148,19 +165,12 @@ public class CtUserResource extends UserResource {
         }
 
         Response error = setEmailTheme(themeRealmName);
-        if (error != null){
+        if (error != null) {
             return error;
         }
 
-        Map<String, String> attributes = new HashMap<>();
-        attributes.put("custom1", custom1);
-        attributes.put("custom2", custom2);
-        attributes.put("custom3", custom3);
-        attributes.put("custom4", custom4);
-        attributes.put("custom5", custom5);
-
         try {
-            ExecuteActionsEmailHelper.sendExecuteActionsEmail(session, realm, user, actions, lifespan, redirectUri, clientId, attributes);
+            ExecuteActionsEmailHelper.sendExecuteActionsEmail(session, realm, targetUser, actions, lifespan, redirectUri, clientId, attributes);
             adminEvent.operation(OperationType.ACTION).resourcePath(session.getContext().getUri()).success();
 
             return Response.noContent().build();
@@ -197,7 +207,7 @@ public class CtUserResource extends UserResource {
         return client;
     }
 
-    private Response setEmailTheme(String themeRealmName){
+    private Response setEmailTheme(String themeRealmName) {
         if (!StringUtils.isBlank(themeRealmName)) {
             RealmManager realmManager = new RealmManager(session);
             RealmModel themeRealm = realmManager.getRealmByName(themeRealmName);
