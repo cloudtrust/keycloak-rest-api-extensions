@@ -45,7 +45,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -146,34 +145,22 @@ public class FixedAccountRestService extends AccountRestService {
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     public Response executeActionsEmail(@QueryParam("lifespan") Integer lifespan, List<String> actions) {
-        return executeActionsEmail(this.user, lifespan, actions);
-    }
-
-    private Response executeActionsEmail(UserModel user, Integer lifespan, List<String> actions) {
         if (!user.isEnabled()) {
             throw new WebApplicationException(
                     ErrorResponse.error("User is disabled", Status.BAD_REQUEST));
         }
 
         String emailToValidate = StringUtils.trim(user.getFirstAttribute(ExecuteActionsEmailHelper.ATTRB_EMAIL_TO_VALIDATE));
+        UserModel targetUser = this.user;
         if (StringUtils.isNotBlank(emailToValidate) && actions.contains(ExecuteActionsEmailHelper.VERIFY_EMAIL_ACTION)) {
-            if (actions.size() > 1) {
-                UserModel userDelegate = new CtUserModelDelegate(user);
-                userDelegate.setEmail(emailToValidate);
-                // Verify email action should be processed in a separate action because target email is not the same
-                try (Response resp = executeActionsEmail(userDelegate, lifespan, Collections.singletonList(ExecuteActionsEmailHelper.VERIFY_EMAIL_ACTION))) {
-                    if (resp.getStatus() >= 400) {
-                        return resp;
-                    }
-                }
-                actions.remove(ExecuteActionsEmailHelper.VERIFY_EMAIL_ACTION);
-            }
+            targetUser = new CtUserModelDelegate(user);
+            targetUser.setEmail(emailToValidate);
         } else if (StringUtils.isBlank(user.getEmail())) {
             return ErrorResponse.error("User email missing", Status.BAD_REQUEST);
         }
 
         try {
-            ExecuteActionsEmailHelper.sendExecuteActionsEmail(session, realm, user, actions, lifespan, null,
+            ExecuteActionsEmailHelper.sendExecuteActionsEmail(session, realm, targetUser, actions, lifespan, null,
                     Constants.ACCOUNT_MANAGEMENT_CLIENT_ID, null);
             return Response.noContent().build();
         } catch (EmailException e) {
