@@ -47,9 +47,9 @@ import static org.keycloak.userprofile.UserProfileContext.USER_API;
 public class UsersResource extends org.keycloak.services.resources.admin.UsersResource {
     private static final Logger logger = Logger.getLogger(UsersResource.class);
 
-    private AdminPermissionEvaluator auth;
-    private AdminEventBuilder adminEvent;
-    private KeycloakSession kcSession;
+    private final AdminPermissionEvaluator auth;
+    private final AdminEventBuilder adminEvent;
+    private final KeycloakSession kcSession;
 
     public UsersResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         super(session.getContext().getRealm(), auth, adminEvent);
@@ -92,9 +92,9 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
      * - we add a consumer processing
      * - we removed call to RepresentationToModel.createGroups
      *
-     * @param rep
-     * @param userUpdater
-     * @return
+     * @param rep         User
+     * @param userUpdater Callback used to update an user
+     * @return Response
      */
     private Response legacyCreateUser(final UserRepresentation rep, Consumer<UserModel> userUpdater) {
         // first check if user has manage rights
@@ -296,6 +296,7 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
      */
     private List<UserRepresentation> toUserRepresentation(RealmModel realm, UserPermissionEvaluator usersEvaluator, Boolean briefRepresentation, List<UserModel> userModels) {
         boolean briefRepresentationB = briefRepresentation != null && briefRepresentation;
+        //boolean briefRepresentationB = true; // Performances issues... force briefRepresentation to true here to quickly fix the issue
         List<UserRepresentation> results = new ArrayList<>();
         boolean canViewGlobal = usersEvaluator.canView();
 
@@ -308,7 +309,7 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
             UserRepresentation userRep = briefRepresentationB
                     ? ModelToRepresentation.toBriefRepresentation(user)
                     : ModelToRepresentation.toRepresentation(kcSession, realm, user);
-            userRep.setAccess(usersEvaluator.getAccess(user));
+            //userRep.setAccess(usersEvaluator.getAccess(user)); Not used by Cloudtrust
             results.add(userRep);
         }
         return results;

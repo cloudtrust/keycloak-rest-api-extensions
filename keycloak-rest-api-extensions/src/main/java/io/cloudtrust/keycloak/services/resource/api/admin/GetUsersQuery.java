@@ -5,6 +5,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.UserProvider;
+import org.keycloak.models.jpa.UserAdapter;
 import org.keycloak.models.jpa.entities.UserEntity;
 import org.keycloak.models.jpa.entities.UserGroupMembershipEntity;
 import org.keycloak.models.jpa.entities.UserRoleMappingEntity;
@@ -30,13 +31,14 @@ public class GetUsersQuery {
     private final KeycloakSession session;
     private final AdminPermissionEvaluator auth;
     private final EntityManager em;
-    private CriteriaBuilder builder;
-    private CriteriaQuery<UserEntity> userEntityQry;
-    private Root<UserEntity> userEntityRoot;
-    private List<Predicate> predicates = new ArrayList<>();
+    private final CriteriaBuilder builder;
+    private final CriteriaQuery<UserEntity> userEntityQry;
+    private final Root<UserEntity> userEntityRoot;
+    private final List<Predicate> predicates = new ArrayList<>();
 
     /**
      * Creates an instance of GetUsersQuery: this object is use to build a GetUsers request
+     *
      * @param session
      * @param auth
      */
@@ -58,6 +60,7 @@ public class GetUsersQuery {
 
     /**
      * Add predicates to search users using a global criteria which can match part of either the username, the full name (first + last name) or the email
+     *
      * @param search The searched value
      */
     public void addPredicateSearchGlobal(String search) {
@@ -78,6 +81,7 @@ public class GetUsersQuery {
 
     /**
      * Add predicates to search users by first name, last name, email and username
+     *
      * @param last     Searched last name
      * @param first    Searched first name
      * @param email    Searched email
@@ -105,6 +109,7 @@ public class GetUsersQuery {
 
     /**
      * Add a filtering according to the given list of group identifiers
+     *
      * @param groups
      */
     public void addPredicateForGroups(List<String> groups) {
@@ -116,6 +121,7 @@ public class GetUsersQuery {
 
     /**
      * Add a filtering according to the given list of role identifiers
+     *
      * @param roles
      */
     public void addPredicateForRoles(List<String> roles) {
@@ -132,7 +138,7 @@ public class GetUsersQuery {
     }
 
     private Predicate createPredicateLike(Expression<String> expr, String value) {
-        if (value.startsWith("=") && value.length()>1) {
+        if (value.startsWith("=") && value.length() > 1) {
             return builder.equal(builder.lower(expr), value.substring(1));
         }
         String effectiveFilter = value.contains("%") ? value.toLowerCase() : "%" + value.toLowerCase() + "%";
@@ -165,6 +171,7 @@ public class GetUsersQuery {
 
     /**
      * Get the total number of matched rows
+     *
      * @return number of matched rows
      */
     public int getTotalCount() {
@@ -173,6 +180,7 @@ public class GetUsersQuery {
 
     /**
      * Get a view of the matched rows
+     *
      * @param firstResult
      * @param maxResults
      * @return
@@ -192,7 +200,8 @@ public class GetUsersQuery {
         UserProvider users = session.users();
 
         return query.getResultList().stream()
-                .map(entity -> users.getUserById(realm, entity.getId()))
+                //.map(entity -> users.getUserById(realm, entity.getId()))
+                .map(entity -> new UserAdapter(null, null, null, entity))
                 .collect(Collectors.toList());
     }
 }
