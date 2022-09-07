@@ -110,7 +110,7 @@ public class GetUsersQuery {
     public void addPredicateForGroups(List<String> groups) {
         if (groups != null && !groups.isEmpty()) {
             this.auth.groups().requireView();
-            predicates.add(userEntityRoot.get("id").in(createGroupsSubQuery(groups)));
+            predicates.add(builder.exists(createGroupsSubQuery(groups)));
         }
     }
 
@@ -140,11 +140,17 @@ public class GetUsersQuery {
     }
 
     private Subquery<?> createGroupsSubQuery(List<String> groups) {
-        Subquery<UserGroupMembershipEntity> ugmSubquery = userEntityQry.subquery(UserGroupMembershipEntity.class);
-        Root<UserGroupMembershipEntity> userGroupMembership = ugmSubquery.from(UserGroupMembershipEntity.class);
+        Subquery<Integer> ugmSubquery = userEntityQry.subquery(Integer.class);
+        Root<UserGroupMembershipEntity> from = ugmSubquery.from(UserGroupMembershipEntity.class);
+
+        Predicate[] subPredicates = new Predicate[] {
+                from.get("groupId").in(groups),
+                builder.equal(from.get("user").get("id"), userEntityRoot.get("id"))
+        };
+
         return ugmSubquery
-                .select(userGroupMembership.get("user").get("id"))
-                .where(userGroupMembership.get("groupId").in(groups));
+                .select(this.builder.literal(1))
+                .where(subPredicates);
     }
 
     private Subquery<?> createRolesSubQuery(List<String> roles) {
@@ -193,6 +199,7 @@ public class GetUsersQuery {
 
         return query.getResultList().stream()
                 .map(entity -> users.getUserById(realm, entity.getId()))
+                //.map(entity -> new UserAdapter(null, null, null, entity))
                 .collect(Collectors.toList());
     }
 }
