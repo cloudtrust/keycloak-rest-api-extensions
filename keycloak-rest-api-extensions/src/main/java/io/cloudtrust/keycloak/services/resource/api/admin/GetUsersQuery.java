@@ -193,6 +193,7 @@ public class GetUsersQuery {
 
         return query.getResultList().stream()
                 .map(entity -> users.getUserById(realm, entity.getId()))
+                //.map(entity -> new UserAdapter(null, null, null, entity))
                 .collect(Collectors.toList());
     }
 }
