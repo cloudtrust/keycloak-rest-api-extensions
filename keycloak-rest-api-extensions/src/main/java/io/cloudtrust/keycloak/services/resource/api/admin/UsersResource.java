@@ -1,6 +1,7 @@
 package io.cloudtrust.keycloak.services.resource.api.admin;
 
 import io.cloudtrust.keycloak.representations.idm.UsersPageRepresentation;
+import org.apache.commons.lang.StringUtils;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
@@ -39,17 +40,23 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.keycloak.userprofile.UserProfileContext.USER_API;
 
 public class UsersResource extends org.keycloak.services.resources.admin.UsersResource {
     private static final Logger logger = Logger.getLogger(UsersResource.class);
 
-    private AdminPermissionEvaluator auth;
-    private AdminEventBuilder adminEvent;
-    private KeycloakSession kcSession;
+    private final AdminPermissionEvaluator auth;
+    private final AdminEventBuilder adminEvent;
+    private final KeycloakSession kcSession;
 
     public UsersResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         super(session.getContext().getRealm(), auth, adminEvent);
@@ -92,9 +99,9 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
      * - we add a consumer processing
      * - we removed call to RepresentationToModel.createGroups
      *
-     * @param rep
-     * @param userUpdater
-     * @return
+     * @param rep         User
+     * @param userUpdater Callback used to update an user
+     * @return Response
      */
     private Response legacyCreateUser(final UserRepresentation rep, Consumer<UserModel> userUpdater) {
         // first check if user has manage rights
@@ -272,7 +279,16 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
                                             @QueryParam("username") String username,
                                             @QueryParam("first") Integer firstResult,
                                             @QueryParam("max") Integer maxResults,
-                                            @QueryParam("briefRepresentation") Boolean briefRepresentation) {
+                                            @QueryParam("briefRepresentation") Boolean briefRepresentation,
+                                            @QueryParam("v")String version) {
+        if ((roles == null || roles.isEmpty()) && StringUtils.isEmpty(search) && StringUtils.isEmpty(last) && StringUtils.isEmpty(first)
+                && StringUtils.isEmpty(email) && StringUtils.isEmpty(username) && !"1".equals(version)) {
+            Set<String> groupModels = new HashSet<>(groups);
+            int count = session.users().getUsersCount(realm, groupModels);
+            session.setAttribute(UserModel.GROUPS, groupModels);
+            Stream<UserModel> userModels = GetUsersQuery.searchForUserStream(session, realm, new HashMap<>(), firstResult, maxResults);
+            return new UsersPageRepresentation(toUserRepresentation(realm, auth.users(), briefRepresentation, userModels), count);
+        }
         GetUsersQuery qry = new GetUsersQuery(kcSession, auth);
 
         if (search != null && !search.isEmpty()) {
@@ -287,30 +303,28 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
         qry.applyPredicates();
 
         int count = qry.getTotalCount();
-        List<UserModel> results = qry.execute(firstResult, maxResults);
+        Stream<UserModel> results = qry.execute(firstResult, maxResults);
         return new UsersPageRepresentation(toUserRepresentation(realm, auth.users(), briefRepresentation, results), count);
     }
 
     /**
      * Source: keycloak-services/src/main/java/org.keycloak.services.resources.admin.UsersResource
      */
-    private List<UserRepresentation> toUserRepresentation(RealmModel realm, UserPermissionEvaluator usersEvaluator, Boolean briefRepresentation, List<UserModel> userModels) {
+    private List<UserRepresentation> toUserRepresentation(RealmModel realm, UserPermissionEvaluator usersEvaluator, Boolean briefRepresentation, Stream<UserModel> userModels) {
         boolean briefRepresentationB = briefRepresentation != null && briefRepresentation;
-        List<UserRepresentation> results = new ArrayList<>();
         boolean canViewGlobal = usersEvaluator.canView();
 
         usersEvaluator.grantIfNoPermission(kcSession.getAttribute(UserModel.GROUPS) != null);
 
-        for (UserModel user : userModels) {
+        return userModels.map(user -> {
             if (!canViewGlobal && !usersEvaluator.canView(user)) {
-                continue;
+                return null;
             }
             UserRepresentation userRep = briefRepresentationB
                     ? ModelToRepresentation.toBriefRepresentation(user)
                     : ModelToRepresentation.toRepresentation(kcSession, realm, user);
             userRep.setAccess(usersEvaluator.getAccess(user));
-            results.add(userRep);
-        }
-        return results;
+            return userRep;
+        }).filter(Objects::nonNull).collect(Collectors.toList());
     }
 }
