@@ -32,9 +32,17 @@ import static org.hamcrest.Matchers.notNullValue;
 class UsersResourceTest extends AbstractRestApiExtensionTest {
     private static final String getMethod = "GET";
 
+    private String findRoleId(String name) {
+        return this.getRealm("test").roles().get(name).toRepresentation().getId();
+    }
+
+    private String findGroupId(String name) {
+        return this.getRealm("test").groups().groups(name, null, null).get(0).getId();
+    }
+
     @Test
     void testStandardGetUsers() throws IOException, URISyntaxException {
-        UsersPageRepresentation page = queryApi(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users");
+        UsersPageRepresentation page = this.api().query(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users");
         UserRepresentation[] users = grabUsers(page);
         assertThat(users, notNullValue());
         assertThat(users, arrayWithSize(8));
@@ -47,12 +55,11 @@ class UsersResourceTest extends AbstractRestApiExtensionTest {
     @Test
     void testPaginatedGetUsers() throws IOException, URISyntaxException {
         // The users are sorted alphabetically by username (sorted in GetUsersQuery)
-
         // Page 1
         List<NameValuePair> nvps = new ArrayList<>();
         nvps.add(new BasicNameValuePair("first", "0"));
         nvps.add(new BasicNameValuePair("max", "2"));
-        UsersPageRepresentation page = queryApi(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
+        UsersPageRepresentation page = this.api().query(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
         UserRepresentation[] users = grabUsers(page);
         assertThat(users, notNullValue());
         assertThat(users, arrayWithSize(2));
@@ -63,7 +70,7 @@ class UsersResourceTest extends AbstractRestApiExtensionTest {
         nvps = new ArrayList<>();
         nvps.add(new BasicNameValuePair("first", "4"));
         nvps.add(new BasicNameValuePair("max", "2"));
-        page = queryApi(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
+        page = this.api().query(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
         users = grabUsers(page);
         assertThat(users, notNullValue());
         assertThat(users, arrayWithSize(2));
@@ -75,7 +82,7 @@ class UsersResourceTest extends AbstractRestApiExtensionTest {
     void testStandardGetUser() throws IOException, URISyntaxException {
         List<NameValuePair> nvps = new ArrayList<>();
         nvps.add(new BasicNameValuePair("username", "rolerichuser"));
-        UsersPageRepresentation page = queryApi(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
+        UsersPageRepresentation page = this.api().query(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
         UserRepresentation[] users = grabUsers(page);
         assertThat(users, notNullValue());
         assertThat(users, arrayWithSize(1));
@@ -89,7 +96,7 @@ class UsersResourceTest extends AbstractRestApiExtensionTest {
     void testGetUsersWithWildcard(String field, String value, int expectedCount) throws IOException, URISyntaxException {
         List<NameValuePair> nvps = new ArrayList<>();
         nvps.add(new BasicNameValuePair(field, value));
-        UsersPageRepresentation page = queryApi(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
+        UsersPageRepresentation page = this.api().query(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
         UserRepresentation[] users = grabUsers(page);
         assertThat(users, notNullValue());
         assertThat(users.length, is(expectedCount));
@@ -111,8 +118,8 @@ class UsersResourceTest extends AbstractRestApiExtensionTest {
         RealmResource testRealm = this.getRealm();
 
         List<NameValuePair> nvps = new ArrayList<>();
-        nvps.add(new BasicNameValuePair("groupId", testRealm.groups().groups("topGroup", null, null).get(0).getId()));
-        UsersPageRepresentation page = queryApi(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
+        nvps.add(new BasicNameValuePair("groupId", findGroupId("topGroup")));
+        UsersPageRepresentation page = this.api().query(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
         UserRepresentation[] users = grabUsers(page);
         assertThat(users, arrayWithSize(2));
         assertThat(Arrays.stream(users).map(UserRepresentation::getUsername).toArray(),
@@ -120,19 +127,18 @@ class UsersResourceTest extends AbstractRestApiExtensionTest {
         assertThat(page.getCount(), is(2));
 
         nvps = new ArrayList<>();
-        GroupRepresentation grp = testRealm.groups().groups("roleRichGroup", null, null, false).stream().findFirst().get();
         // With KC18, subgroups are not filled in the group when searching with groups().group(...) so we search the group and get it again by its id
-        grp = testRealm.groups().group(grp.getId()).toRepresentation();
+        GroupRepresentation grp = testRealm.groups().group(findGroupId("roleRichGroup")).toRepresentation();
         nvps.add(new BasicNameValuePair("groupId", grp.getSubGroups().stream().filter(group -> group.getName().equals("level2group")).findFirst().get().getId()));
-        page = queryApi(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
+        page = this.api().query(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
         users = grabUsers(page);
         assertThat(users, arrayWithSize(1));
         assertThat(Arrays.stream(users).map(UserRepresentation::getUsername).toArray(),
                 arrayContainingInAnyOrder("rolerichuser"));
         assertThat(page.getCount(), is(1));
 
-        nvps.add(new BasicNameValuePair("groupId", testRealm.groups().groups("topGroup", null, null).get(0).getId()));
-        page = queryApi(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
+        nvps.add(new BasicNameValuePair("groupId", findGroupId("topGroup")));
+        page = this.api().query(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
         users = grabUsers(page);
         assertThat(users, arrayWithSize(3));
         assertThat(Arrays.stream(users).map(UserRepresentation::getUsername).toArray(),
@@ -142,11 +148,9 @@ class UsersResourceTest extends AbstractRestApiExtensionTest {
 
     @Test
     void testGetUsersWithRole() throws IOException, URISyntaxException {
-        RealmResource testRealm = this.getRealm();
-
         List<NameValuePair> nvps = new ArrayList<>();
-        nvps.add(new BasicNameValuePair("roleId", testRealm.roles().get("user").toRepresentation().getId()));
-        UsersPageRepresentation page = queryApi(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
+        nvps.add(new BasicNameValuePair("roleId", findRoleId("user")));
+        UsersPageRepresentation page = this.api().query(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
         UserRepresentation[] users = grabUsers(page);
         assertThat(users, arrayWithSize(5));
         assertThat(Arrays.stream(users).map(UserRepresentation::getUsername).toArray(),
@@ -154,8 +158,8 @@ class UsersResourceTest extends AbstractRestApiExtensionTest {
                         , "keycloak-user@localhost", "john-doh@localhost", "test-user@localhost"));
         assertThat(page.getCount(), is(5));
 
-        nvps.add(new BasicNameValuePair("roleId", testRealm.roles().get("offline_access").toRepresentation().getId()));
-        page = queryApi(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
+        nvps.add(new BasicNameValuePair("roleId", findRoleId("offline_access")));
+        page = this.api().query(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
         users = grabUsers(page);
         assertThat(users, arrayWithSize(6));
         assertThat(Arrays.stream(users).map(UserRepresentation::getUsername).toArray(),
@@ -169,17 +173,17 @@ class UsersResourceTest extends AbstractRestApiExtensionTest {
         RealmResource testRealm = this.getRealm();
 
         List<NameValuePair> nvps = new ArrayList<>();
-        nvps.add(new BasicNameValuePair("roleId", testRealm.roles().get("user").toRepresentation().getId()));
-        nvps.add(new BasicNameValuePair("groupId", testRealm.groups().groups("topGroup", null, null).get(0).getId()));
-        UsersPageRepresentation page = queryApi(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
+        nvps.add(new BasicNameValuePair("roleId", findRoleId("user")));
+        nvps.add(new BasicNameValuePair("groupId", findGroupId("topGroup")));
+        UsersPageRepresentation page = this.api().query(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
         UserRepresentation[] users = grabUsers(page);
         assertThat(users, arrayWithSize(1));
         assertThat(Arrays.stream(users).map(UserRepresentation::getUsername).toArray(),
                 arrayContainingInAnyOrder("topgroupuser2"));
         assertThat(page.getCount(), is(1));
 
-        nvps.add(new BasicNameValuePair("roleId", testRealm.roles().get("offline_access").toRepresentation().getId()));
-        page = queryApi(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
+        nvps.add(new BasicNameValuePair("roleId", findRoleId("offline_access")));
+        page = this.api().query(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
         users = grabUsers(page);
         assertThat(users, arrayWithSize(2));
         assertThat(Arrays.stream(users).map(UserRepresentation::getUsername).toArray(),
@@ -191,7 +195,7 @@ class UsersResourceTest extends AbstractRestApiExtensionTest {
     void testGetUsersWithNonExistingGroup() throws IOException, URISyntaxException {
         List<NameValuePair> nvps = new ArrayList<>();
         nvps.add(new BasicNameValuePair("groupId", "123"));
-        UsersPageRepresentation page = queryApi(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
+        UsersPageRepresentation page = this.api().query(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
         UserRepresentation[] users = grabUsers(page);
         assertThat(users, arrayWithSize(0));
         assertThat(page.getCount(), is(0));
@@ -201,7 +205,7 @@ class UsersResourceTest extends AbstractRestApiExtensionTest {
     void testGetUsersWithNonExistingRole() throws IOException, URISyntaxException {
         List<NameValuePair> nvps = new ArrayList<>();
         nvps.add(new BasicNameValuePair("roleId", "123879834564"));
-        UsersPageRepresentation page = queryApi(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
+        UsersPageRepresentation page = this.api().query(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
         UserRepresentation[] users = grabUsers(page);
         assertThat(users, arrayWithSize(0));
         assertThat(page.getCount(), is(0));
@@ -212,9 +216,9 @@ class UsersResourceTest extends AbstractRestApiExtensionTest {
         RealmResource testRealm = this.getRealm();
 
         List<NameValuePair> nvps = new ArrayList<>();
-        nvps.add(new BasicNameValuePair("groupId", testRealm.groups().groups("topGroup", null, null).get(0).getId()));
+        nvps.add(new BasicNameValuePair("groupId", findGroupId("topGroup")));
         nvps.add(new BasicNameValuePair("search", "topgroupuser2"));
-        UsersPageRepresentation page = queryApi(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
+        UsersPageRepresentation page = this.api().query(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
         UserRepresentation[] users = grabUsers(page);
         assertThat(users, arrayWithSize(1));
         assertThat(Arrays.stream(users).map(UserRepresentation::getUsername).toArray(),
@@ -226,7 +230,7 @@ class UsersResourceTest extends AbstractRestApiExtensionTest {
     void testGetUsersWithSearch() throws IOException, URISyntaxException {
         List<NameValuePair> nvps = new ArrayList<>();
         nvps.add(new BasicNameValuePair("search", "topgroupuser"));
-        UsersPageRepresentation page = queryApi(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
+        UsersPageRepresentation page = this.api().query(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
         UserRepresentation[] users = grabUsers(page);
         assertThat(users, arrayWithSize(2));
         assertThat(Arrays.stream(users).map(UserRepresentation::getUsername).toArray(),
@@ -235,6 +239,6 @@ class UsersResourceTest extends AbstractRestApiExtensionTest {
     }
 
     private UserRepresentation[] grabUsers(UsersPageRepresentation page) {
-        return page.getUsers().toArray(new UserRepresentation[]{});
+        return page.getUsers().toArray(new UserRepresentation[page.getUsers().size()]);
     }
 }

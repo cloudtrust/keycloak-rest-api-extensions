@@ -1,13 +1,15 @@
 package io.cloudtrust.keycloak.services.resource.api.admin;
 
 import io.cloudtrust.keycloak.representations.idm.UsersPageRepresentation;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
+import org.keycloak.common.util.CollectionUtil;
 import org.keycloak.common.util.ObjectUtil;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
+import org.keycloak.models.Constants;
 import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.ModelDuplicateException;
@@ -28,6 +30,7 @@ import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluato
 import org.keycloak.services.resources.admin.permissions.UserPermissionEvaluator;
 import org.keycloak.userprofile.UserProfile;
 import org.keycloak.userprofile.UserProfileProvider;
+import org.keycloak.utils.SearchQueryUtils;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -40,11 +43,12 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -246,6 +250,72 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
         return resource;
     }
 
+    // Comes from Keycloak file UsersResource.java
+    private static final String SEARCH_ID_PARAMETER = "id:";
+
+    /*
+    // For a later use, this method let the caller only get a count of matching users
+    private int getUsersCount(@QueryParam("groupId") List<String> groups,
+                              @QueryParam("roleId") List<String> roles,
+                              @QueryParam("search") String search,
+                              @QueryParam("lastName") String lastName,
+                              @QueryParam("firstName") String firstName,
+                              @QueryParam("email") String email,
+                              @QueryParam("username") String username,
+                              @QueryParam("emailVerified") Boolean emailVerified,
+                              @QueryParam("enabled") Boolean enabled,
+                              @QueryParam("exact") Boolean exact,
+                              @QueryParam("q") String searchQuery) {
+        UserPermissionEvaluator userPermissionEvaluator = auth.users();
+        userPermissionEvaluator.requireQuery();
+
+        Map<String, String> searchAttributes = searchQuery == null
+                ? Collections.emptyMap()
+                : SearchQueryUtils.getFields(searchQuery);
+
+        if (!CollectionUtil.isEmpty(groups)) {
+            session.setAttribute(UserModel.GROUPS, new HashSet<>(groups));
+        }
+        if (!CollectionUtil.isEmpty(roles)) {
+            session.setAttribute("filterRoles", new HashSet<>(roles));
+        }
+
+        if (search != null) {
+            if (search.startsWith(SEARCH_ID_PARAMETER)) {
+                UserModel userModel = session.users().getUserById(realm, search.substring(SEARCH_ID_PARAMETER.length()).trim());
+                if (userModel != null) {
+                    return 1;
+                }
+            } else {
+                Map<String, String> attributes = new HashMap<>();
+                attributes.put(UserModel.SEARCH, search.trim());
+                if (enabled != null) {
+                    attributes.put(UserModel.ENABLED, enabled.toString());
+                }
+                session.setAttribute(UserModel.INCLUDE_SERVICE_ACCOUNT, false);
+                return GetUsersQuery.countUsers(session, realm, attributes);
+            }
+        } else if (lastName != null || firstName != null || email != null || username != null || emailVerified != null
+                || enabled != null || !searchAttributes.isEmpty()) {
+            Map<String, String> attributes = new HashMap<>();
+            addWhenNotBlank(attributes, UserModel.LAST_NAME, lastName);
+            addWhenNotBlank(attributes, UserModel.FIRST_NAME, firstName);
+            addWhenNotBlank(attributes, UserModel.EMAIL, email);
+            addWhenNotBlank(attributes, UserModel.USERNAME, username);
+            addWhenNotBlank(attributes, UserModel.EMAIL_VERIFIED, emailVerified == null ? null : emailVerified.toString());
+            addWhenNotBlank(attributes, UserModel.ENABLED, enabled == null ? null : enabled.toString());
+
+            attributes.putAll(searchAttributes);
+            session.setAttribute(UserModel.INCLUDE_SERVICE_ACCOUNT, true);
+            return GetUsersQuery.countUsers(session, realm, attributes);
+        } else {
+            session.setAttribute(UserModel.INCLUDE_SERVICE_ACCOUNT, false);
+            return GetUsersQuery.countUsers(session, realm, new HashMap<>());
+        }
+        return 0;
+    }
+    */
+
     /**
      * Get users
      * <p>
@@ -255,16 +325,20 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
      * Adding multiple groups and multiple roles will give the intersection of users that belong both to the the specified groups and the specified roles
      * If either groups or roles are specified in the call, paging with "first" and/or "max" is impossible, and trying will return a 501.
      *
-     * @param groups      A list of group Ids
-     * @param roles       A list of realm role names
-     * @param search      A special search field: when used, all other search fields are ignored. Can be something like id:abcd-efg-123
-     *                    or a string which can be contained in the first+last name, email or username
-     * @param last        A user's last name
-     * @param first       A user's first name
-     * @param email       A user's email
-     * @param username    A user's username
-     * @param firstResult Pagination offset
-     * @param maxResults  Maximum results size (defaults to 100) - only taken into account if no group / role is defined
+     * @param groups              A list of group Ids
+     * @param roles               A list of realm role names
+     * @param search              A special search field: when used, all other search fields are ignored. Can be something like id:abcd-efg-123
+     *                            or a string which can be contained in the first+last name, email or username
+     * @param lastName            A user's last name
+     * @param firstName           A user's first name
+     * @param email               A user's email
+     * @param username            A user's username
+     * @param emailVerified       Shall the email be verified or not?
+     * @param firstResult         Pagination offset
+     * @param maxResults          Maximum results size (defaults to 100) - only taken into account if no group / role is defined
+     * @param briefRepresentation Should the API return a brief representation or the standard one
+     * @param exact               Boolean which defines whether the params "last", "first", "email" and "username" must match exactly
+     * @param searchQuery         A query to search for custom attributes, in the format 'key1:value2 key2:value2'
      * @return A list of users corresponding to the searched parameters, as well as the total count of users
      */
     @GET
@@ -273,38 +347,86 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
     public UsersPageRepresentation getUsers(@QueryParam("groupId") List<String> groups,
                                             @QueryParam("roleId") List<String> roles,
                                             @QueryParam("search") String search,
-                                            @QueryParam("lastName") String last,
-                                            @QueryParam("firstName") String first,
+                                            @QueryParam("lastName") String lastName,
+                                            @QueryParam("firstName") String firstName,
                                             @QueryParam("email") String email,
                                             @QueryParam("username") String username,
+                                            @QueryParam("emailVerified") Boolean emailVerified,
                                             @QueryParam("first") Integer firstResult,
                                             @QueryParam("max") Integer maxResults,
+                                            @QueryParam("enabled") Boolean enabled,
                                             @QueryParam("briefRepresentation") Boolean briefRepresentation,
-                                            @QueryParam("v")String version) {
-        if ((roles == null || roles.isEmpty()) && StringUtils.isEmpty(search) && StringUtils.isEmpty(last) && StringUtils.isEmpty(first)
-                && StringUtils.isEmpty(email) && StringUtils.isEmpty(username) && !"1".equals(version)) {
-            Set<String> groupModels = new HashSet<>(groups);
-            int count = session.users().getUsersCount(realm, groupModels);
-            session.setAttribute(UserModel.GROUPS, groupModels);
-            Stream<UserModel> userModels = GetUsersQuery.searchForUserStream(session, realm, new HashMap<>(), firstResult, maxResults);
-            return new UsersPageRepresentation(toUserRepresentation(realm, auth.users(), briefRepresentation, userModels), count);
-        }
-        GetUsersQuery qry = new GetUsersQuery(kcSession, auth);
+                                            @QueryParam("exact") Boolean exact,
+                                            @QueryParam("q") String searchQuery) {
+        firstResult = firstResult != null ? firstResult : -1;
+        maxResults = maxResults != null ? maxResults : Constants.DEFAULT_MAX_RESULTS;
 
-        if (search != null && !search.isEmpty()) {
-            qry.addPredicateSearchGlobal(search);
+        UserPermissionEvaluator userPermissionEvaluator = auth.users();
+        userPermissionEvaluator.requireQuery();
+
+        Map<String, String> searchAttributes = searchQuery == null
+                ? Collections.emptyMap()
+                : SearchQueryUtils.getFields(searchQuery);
+
+        if (!CollectionUtil.isEmpty(groups)) {
+            session.setAttribute(UserModel.GROUPS, new HashSet<>(groups));
+        }
+        if (!CollectionUtil.isEmpty(roles)) {
+            session.setAttribute("filterRoles", new HashSet<>(roles));
+        }
+
+        Stream<UserModel> userModels = Stream.empty();
+        int count = 0;
+        if (search != null) {
+            if (search.startsWith(SEARCH_ID_PARAMETER)) {
+                UserModel userModel = session.users().getUserById(realm, search.substring(SEARCH_ID_PARAMETER.length()).trim());
+                if (userModel != null) {
+                    count = 1;
+                    userModels = Stream.of(userModel);
+                }
+            } else {
+                Map<String, String> attributes = new HashMap<>();
+                attributes.put(UserModel.SEARCH, search.trim());
+                if (enabled != null) {
+                    attributes.put(UserModel.ENABLED, enabled.toString());
+                }
+                session.setAttribute(UserModel.INCLUDE_SERVICE_ACCOUNT, false);
+                count = GetUsersQuery.countUsers(session, realm, attributes);
+                if (count > 0) {
+                    userModels = GetUsersQuery.searchForUserStream(session, realm, attributes, firstResult, maxResults);
+                }
+            }
+        } else if (lastName != null || firstName != null || email != null || username != null || emailVerified != null
+                || enabled != null || !searchAttributes.isEmpty()) {
+            Map<String, String> attributes = new HashMap<>();
+            addWhenNotBlank(attributes, UserModel.LAST_NAME, lastName);
+            addWhenNotBlank(attributes, UserModel.FIRST_NAME, firstName);
+            addWhenNotBlank(attributes, UserModel.EMAIL, email);
+            addWhenNotBlank(attributes, UserModel.USERNAME, username);
+            addWhenNotBlank(attributes, UserModel.EMAIL_VERIFIED, emailVerified == null ? null : emailVerified.toString());
+            addWhenNotBlank(attributes, UserModel.ENABLED, enabled == null ? null : enabled.toString());
+
+            attributes.putAll(searchAttributes);
+            session.setAttribute(UserModel.INCLUDE_SERVICE_ACCOUNT, true);
+            count = GetUsersQuery.countUsers(session, realm, attributes);
+            if (count > 0) {
+                userModels = GetUsersQuery.searchForUserStream(session, realm, attributes, firstResult, maxResults);
+            }
         } else {
-            qry.addPredicateSearchFields(last, first, email, username);
+            session.setAttribute(UserModel.INCLUDE_SERVICE_ACCOUNT, false);
+            count = GetUsersQuery.countUsers(session, realm, new HashMap<>());
+            if (count > 0) {
+                userModels = GetUsersQuery.searchForUserStream(session, realm, new HashMap<>(), firstResult, maxResults);
+            }
         }
 
-        qry.addPredicateForGroups(groups);
-        qry.addPredicateForRoles(roles);
+        return new UsersPageRepresentation(toUserRepresentation(realm, userPermissionEvaluator, briefRepresentation, userModels), count);
+    }
 
-        qry.applyPredicates();
-
-        int count = qry.getTotalCount();
-        Stream<UserModel> results = qry.execute(firstResult, maxResults);
-        return new UsersPageRepresentation(toUserRepresentation(realm, auth.users(), briefRepresentation, results), count);
+    private void addWhenNotBlank(Map<String, String> map, String key, String value) {
+        if (StringUtils.isNotBlank(value)) {
+            map.put(key, value);
+        }
     }
 
     /**
