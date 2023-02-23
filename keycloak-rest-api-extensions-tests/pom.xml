@@ -12,6 +12,7 @@
     </parent>
 
     <artifactId>keycloak-rest-api-extensions-tests</artifactId>
+    <version>18.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -19,7 +20,6 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <version.pmd.plugin>3.12.0</version.pmd.plugin>
 
-        <keycloak.version>${project.version}</keycloak.version>
         <guava.version>31.0.1-jre</guava.version>
     </properties>
 
@@ -32,8 +32,32 @@
         <dependency>
             <groupId>io.cloudtrust</groupId>
             <artifactId>kc-cloudtrust-test-tools</artifactId>
+            <version>${kc-cloudtrust.version}</version>
         </dependency>
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>project-release</id>
+            <url>https://artifactory.svc.elca.ch/artifactory/prj_cloudtrust_release</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>project-snapshot</id>
+            <url>https://artifactory.svc.elca.ch/artifactory/prj_cloudtrust_snapshot</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
     <build>
         <plugins>

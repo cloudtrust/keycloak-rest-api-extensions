@@ -1,0 +1,1 @@
+javaBuildPipeline('kc-rest-api-extensions', [[name: 'keycloak-rest-api-extensions', path:'./keycloak-rest-api-extensions']], true)
