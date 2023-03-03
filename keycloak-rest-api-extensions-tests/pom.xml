@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>keycloak-rest-api-extensions-tests</artifactId>
-    <version>18.1.2-SNAPSHOT</version>
+    <version>18.1.2</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -82,4 +82,8 @@
             </plugin>
         </plugins>
     </build>
+
+  <scm>
+    <tag>18.1.2</tag>
+  </scm>
 </project>
