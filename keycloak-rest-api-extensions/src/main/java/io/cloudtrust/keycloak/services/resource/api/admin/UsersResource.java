@@ -1,6 +1,7 @@
 package io.cloudtrust.keycloak.services.resource.api.admin;
 
 import io.cloudtrust.keycloak.representations.idm.UsersPageRepresentation;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
@@ -49,6 +50,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -77,20 +79,27 @@ public class UsersResource extends org.keycloak.services.resources.admin.UsersRe
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
+    @Path("/legacy")
     @Override
     public Response createUser(final UserRepresentation rep) {
+        return this.createUserWithParams(rep, false);
+    }
+
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response createUserWithParams(final UserRepresentation rep, final @QueryParam("generateNameID") Boolean generateNameID) {
         return legacyCreateUser(rep, user -> {
             List<GroupModel> groups = getGroups(rep.getGroups());
             List<RoleModel> roles = getRoles(rep.getRealmRoles());
 
             // Add groups
-            for (GroupModel group : groups) {
-                user.joinGroup(group);
-            }
+            groups.forEach(user::joinGroup);
 
             // Add roles
-            for (RoleModel role : roles) {
-                user.grantRole(role);
+            roles.forEach(user::grantRole);
+
+            if (BooleanUtils.isTrue(generateNameID)) {
+                user.setSingleAttribute(CtUserResource.ATTRIB_NAME_ID, "G-" + UUID.randomUUID());
             }
         });
     }

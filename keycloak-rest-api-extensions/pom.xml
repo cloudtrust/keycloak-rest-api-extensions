@@ -22,12 +22,11 @@
         <dependency>
             <groupId>io.cloudtrust</groupId>
             <artifactId>cloudtrust-common</artifactId>
-            <version>${cloudtrust.version}</version>
         </dependency>
         <dependency>
             <groupId>io.cloudtrust</groupId>
             <artifactId>kc-cloudtrust-common</artifactId>
-            <version>${kc-cloudtrust.version}</version>
+            <version>18.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>

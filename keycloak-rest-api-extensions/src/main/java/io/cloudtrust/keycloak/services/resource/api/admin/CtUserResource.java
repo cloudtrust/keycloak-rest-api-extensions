@@ -7,6 +7,7 @@ import io.cloudtrust.keycloak.email.model.EmailModel;
 import io.cloudtrust.keycloak.email.model.RealmWithOverridenEmailTheme;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.annotations.cache.NoCache;
 import org.keycloak.email.EmailException;
 import org.keycloak.email.freemarker.beans.ProfileBean;
 import org.keycloak.events.admin.OperationType;
@@ -17,6 +18,7 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.protocol.oidc.utils.RedirectUtils;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.ServicesLogger;
 import org.keycloak.services.managers.RealmManager;
@@ -26,14 +28,17 @@ import org.keycloak.services.resources.admin.UserResource;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -41,6 +46,8 @@ import java.util.Map;
 
 public class CtUserResource extends UserResource {
     private static final Logger logger = Logger.getLogger(CtUserResource.class);
+
+    protected static final String ATTRIB_NAME_ID = "saml.persistent.name.id.for.*";
 
     private final AdminPermissionEvaluator auth;
     private final AdminEventBuilder adminEvent;
@@ -53,6 +60,23 @@ public class CtUserResource extends UserResource {
         this.adminEvent = adminEvent;
         this.kcSession = kcSession;
         this.user = user;
+    }
+
+    /**
+     * Get representation of the user
+     *
+     * @return Requested user
+     */
+    @GET
+    @NoCache
+    @Produces(MediaType.APPLICATION_JSON)
+    public UserRepresentation getUser() {
+        UserRepresentation res = super.getUser();
+        String nameId = this.user.getFirstAttribute(ATTRIB_NAME_ID);
+        if (StringUtils.isNotBlank(nameId)) {
+            res.getAttributes().put(ATTRIB_NAME_ID, Collections.singletonList(nameId));
+        }
+        return res;
     }
 
     @Path("send-email")
