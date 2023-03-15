@@ -38,6 +38,9 @@ public class GetUsersQuery {
     private static final String FIRST_NAME = "firstName";
     private static final String LAST_NAME = "lastName";
 
+    private GetUsersQuery() {
+    }
+
     /**
      * Imported from Keycloak: count adapt from searchForUserStream
      *

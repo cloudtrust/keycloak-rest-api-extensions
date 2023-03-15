@@ -2,6 +2,7 @@ package io.cloudtrust.keycloak.services.resource;
 
 import io.cloudtrust.keycloak.services.resource.api.ApiConfig;
 import io.cloudtrust.keycloak.services.resource.api.ApiRoot;
+
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.services.resource.RealmResourceProvider;
 

@@ -10,11 +10,11 @@ This module implementents extensions to keycloak's REST API. Currently implement
   * get credentials statistics
 * account : Fix a bug with CORS
 
-Currently works under keycloak 8.0.1
+Currently works under keycloak 20.0.5
 
 ## Installation
 
-Requires java 8 and maven 3.X
+Requires java 17 and maven 3.X
 
 ```
 mvn clean package

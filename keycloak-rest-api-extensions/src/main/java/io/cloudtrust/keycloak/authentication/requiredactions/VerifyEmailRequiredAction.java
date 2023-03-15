@@ -6,13 +6,10 @@ import io.cloudtrust.keycloak.email.model.UserWithOverridenEmail;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 import org.keycloak.Config.Scope;
-import org.keycloak.OAuth2Constants;
-import org.keycloak.authentication.DisplayTypeRequiredActionFactory;
 import org.keycloak.authentication.RequiredActionContext;
 import org.keycloak.authentication.RequiredActionFactory;
 import org.keycloak.authentication.RequiredActionProvider;
 import org.keycloak.authentication.actiontoken.DefaultActionToken;
-import org.keycloak.authentication.requiredactions.ConsoleTermsAndConditions;
 import org.keycloak.email.EmailException;
 import org.keycloak.email.freemarker.beans.ProfileBean;
 import org.keycloak.events.Details;
@@ -35,13 +32,15 @@ import java.util.Objects;
 /**
  * Inspired by Keycloak VerifyEmail
  */
-public class VerifyEmailRequiredAction implements RequiredActionProvider, RequiredActionFactory, DisplayTypeRequiredActionFactory {
+public class VerifyEmailRequiredAction implements RequiredActionProvider, RequiredActionFactory {
     private static final Logger logger = Logger.getLogger(VerifyEmailRequiredAction.class);
 
     private static final String REQUIRED_ACTION_ID = "ct-verify-email";
 
     static class CtVerifyEmailActionToken extends DefaultActionToken {
-        private static final String JSON_FIELD_ORIGINAL_AUTHENTICATION_SESSION_ID = "oasid";
+		private static final long serialVersionUID = 1L;
+
+		private static final String JSON_FIELD_ORIGINAL_AUTHENTICATION_SESSION_ID = "oasid";
 
         @JsonProperty(value = JSON_FIELD_ORIGINAL_AUTHENTICATION_SESSION_ID)
         private String originalAuthenticationSessionId;
@@ -103,7 +102,7 @@ public class VerifyEmailRequiredAction implements RequiredActionProvider, Requir
         if (!Objects.equals(authSession.getAuthNote(Constants.VERIFY_EMAIL_KEY), email)) {
             authSession.setAuthNote(Constants.VERIFY_EMAIL_KEY, email);
             EventBuilder event = context.getEvent().clone().event(EventType.SEND_VERIFY_EMAIL).detail(Details.EMAIL, email);
-            sendVerifyEmail(context.getSession(), user, context.getAuthenticationSession(), event);
+            sendVerifyEmail(context.getSession(), user, event);
         }
 
         LoginFormsProvider loginFormsProvider = context.form()
@@ -122,7 +121,7 @@ public class VerifyEmailRequiredAction implements RequiredActionProvider, Requir
         // Nothing to do
     }
 
-    private void sendVerifyEmail(KeycloakSession session, UserModel user, AuthenticationSessionModel authSession, EventBuilder event) throws UriBuilderException, IllegalArgumentException {
+    private void sendVerifyEmail(KeycloakSession session, UserModel user, EventBuilder event) throws UriBuilderException, IllegalArgumentException {
         try {
             ExecuteActionsEmailHelper.sendExecuteActionsEmail(session, session.getContext().getRealm(), user,
                     Collections.singletonList(REQUIRED_ACTION_ID), null, null, null, null);
@@ -140,13 +139,6 @@ public class VerifyEmailRequiredAction implements RequiredActionProvider, Requir
     @Override
     public RequiredActionProvider create(KeycloakSession session) {
         return this;
-    }
-
-    @Override
-    public RequiredActionProvider createDisplay(KeycloakSession session, String displayType) {
-        if (displayType == null) return this;
-        if (!OAuth2Constants.DISPLAY_CONSOLE.equalsIgnoreCase(displayType)) return null;
-        return ConsoleTermsAndConditions.SINGLETON;
     }
 
     @Override
