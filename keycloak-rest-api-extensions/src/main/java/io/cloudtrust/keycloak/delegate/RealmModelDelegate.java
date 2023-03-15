@@ -75,18 +75,27 @@ public class RealmModelDelegate implements RealmModel {
 
     @Override
     @Deprecated
+    /**
+     * @deprecated Default roles are now managed by {@link org.keycloak.models.RealmModel#getDefaultRole()}. This method will be removed.
+     */
     public Stream<String> getDefaultRolesStream() {
         return delegate.getDefaultRolesStream();
     }
 
     @Override
     @Deprecated
+    /**
+     * @deprecated Default roles are now managed by {@link org.keycloak.models.RealmModel#getDefaultRole()}. This method will be removed.
+     */
     public void addDefaultRole(String name) {
         delegate.addDefaultRole(name);
     }
 
     @Override
     @Deprecated
+    /**
+     * @deprecated Default roles are now managed by {@link org.keycloak.models.RealmModel#getDefaultRole()}. This method will be removed.
+     */
     public void removeDefaultRoles(String... defaultRoles) {
         delegate.removeDefaultRoles(defaultRoles);
     }
@@ -1267,6 +1276,10 @@ public class RealmModelDelegate implements RealmModel {
     }
 
     @Override
+    @Deprecated
+    /**
+     * @deprecated Use {@link GroupProvider#searchForGroupByNameStream(RealmModel, String, Boolean, Integer, Integer)} instead.
+     */
     public Stream<GroupModel> searchForGroupByNameStream(String search, Integer first, Integer max) {
         return delegate.searchForGroupByNameStream(search, first, max);
     }

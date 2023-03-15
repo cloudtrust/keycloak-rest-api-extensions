@@ -1,17 +1,20 @@
 #!/bin/bash
 # install.sh
 #
-# install keycloak module :
-# keycloak-rest-api-extensions
+# install keycloak module
 
-set -eE
+set -eE -o pipefail
 MODULE_DIR=$(dirname $0)
 TARGET_DIR=$MODULE_DIR/target
-[ -z "$WINDIR" ] && KC_EXE=kc.sh || KC_EXE=kc.bat
+#[ -z "$WINDIR" ] && KC_EXE=kc.sh || KC_EXE=kc.bat
+MODULE_CONF=${MODULE_DIR}/module.conf
+
+NBSOURCES=$(find ${TARGET_DIR} -name *sources.jar |wc -l)
+#[ $NBSOURCES -ne 0 ] && echo "When running from source project, please use deploy-from-tar.sh" && exit 0
 
 usage ()
 {
-    echo "usage: $0 /path/to/keycloak [-u]"
+    echo "usage: $0 /path/to/keycloak [-t host] [-u] [-b]"
 }
 
 abort_usage_keycloak()
@@ -24,8 +27,9 @@ abort_usage_keycloak()
 init()
 {
     #optional args
+    argv__TARGET="http://localhost:8811/event/receiver"
     argv__UNINSTALL=0
-    getopt_results=$(getopt -s bash -o u --long uninstall -- "$@")
+    getopt_results=$(getopt -s bash -o t:u --long target:,uninstall -- "$@")
 
     if test $? != 0
     then
@@ -39,8 +43,13 @@ init()
         case "$1" in
             -u|--uninstall)
                 argv__UNINSTALL=1
-                echo "--delete set. will remove plugin"
+                echo "--uninstall set. will remove plugin"
                 shift
+                ;;
+            -t|--target)
+                argv__TARGET="$2"
+                echo "--target set to \"$argv__TARGET\". Will edit the emitter target URI"
+                shift 2
                 ;;
             --)
                 shift
@@ -64,8 +73,13 @@ init()
     [ -d $argv__KEYCLOAK ] && [ -d $argv__KEYCLOAK/bin ] && [ -d $argv__KEYCLOAK/providers ] && [ -d $argv__KEYCLOAK/conf ] || abort_usage_keycloak
     # optional args
     CONF_FILE=$argv__KEYCLOAK/conf/keycloak.conf
-    JAR_PATH=`find ${TARGET_DIR} -type f -name "*.jar" -not -name "*sources.jar" | grep -v "archive-tmp"`
+    JAR_PATH=`find ${TARGET_DIR} -type f -name "*.jar" -not -name "*sources.jar" | grep -v "libs/"`
     JAR_NAME=`basename $JAR_PATH`
+    if [ -z "${JAR_NAME}" ]; then
+        echo "Can't get jar name"
+        usage
+        exit 1
+    fi
 }
 
 init_exceptions()
@@ -91,17 +105,114 @@ add_configuration()
   fi
 }
 
+cleanup_configuration()
+{
+    if [ -f "${MODULE_CONF}" ]; then
+        for i in $(grep -v "^#" ${MODULE_CONF} |sed 's/=.*//')
+        do
+            del_configuration $i
+        done
+    fi
+}
+
 cleanup()
 {
     #clean dir structure in case of script failure
     echo "cleanup..."
 
-    del_configuration spi.api.enabled
-    del_configuration spi.api.other
-    del_configuration spi.api.terms-of-use-acceptance-delay-days
-    rm -rf $argv__KEYCLOAK/providers/$JAR_NAME
+    cleanup_configuration
+    [ ! -z "$JAR_NAME" ] && rm -f $argv__KEYCLOAK/providers/$JAR_NAME
 
     echo "done"
+}
+
+# Following function is inspired from https://stackoverflow.com/questions/4023830/how-to-compare-two-strings-in-dot-separated-version-format-in-bash
+# We just added processing for -SNAPSHOT
+vercomp()
+{
+    # select VERSION1 (more recent) if both version contains -SNAPSHOT (=> -90 / -99)
+    VERSION1=$(echo $1 |sed 's/-SNAPSHOT/.-90/')
+    VERSION2=$(echo $2 |sed 's/-SNAPSHOT/.-99/')
+
+    if [[ $VERSION1 == $VERSION2 ]]
+    then
+        echo 0
+        return
+    fi
+
+    local IFS=.
+    local i ver1=($VERSION1) ver2=($VERSION2)
+    # fill empty fields in ver1 with zeros
+    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
+    do
+        ver1[i]=0
+    done
+    for ((i=0; i<${#ver1[@]}; i++))
+    do
+        if [[ -z ${ver2[i]} ]]
+        then
+            # fill empty fields in ver2 with zeros
+            ver2[i]=0
+        fi
+        if ((10#${ver1[i]} > 10#${ver2[i]}))
+        then
+            echo 1
+            return
+        fi
+        if ((10#${ver1[i]} < 10#${ver2[i]}))
+        then
+            echo 2
+            return
+        fi
+    done
+    echo 0
+    return
+}
+
+getDependencyVersion()
+{
+    # remove rootname and extension
+    FILENAME=$(echo $1 |sed "s@.*$2-@@" |sed "s/\.jar//")
+    [ -z "$FILENAME" ] && echo "0.0.0" || echo $FILENAME
+}
+
+copy_dependency()
+{
+    FILEPATH=$1
+    TARGET=$2
+
+    FILENAME=$(basename ${FILEPATH})
+    ROOTNAME=${FILENAME%-[0-9]*}
+    COPIED=0
+
+    for LOCALFILE in ${TARGET}/${ROOTNAME}*.jar
+    do
+        COPIED=1
+        LOCALNAME=$(basename ${LOCALFILE})
+        if [[ ${FILENAME} == ${LOCALNAME} ]]; then
+            echo "[SKIP] ${FILENAME} already exists"
+        else
+            VERSION1=$(getDependencyVersion ${FILENAME} ${ROOTNAME})
+            VERSION2=$(getDependencyVersion ${LOCALFILE} ${ROOTNAME})
+            COMPARE=$(vercomp ${VERSION1} ${VERSION2})
+            case $COMPARE in
+                1)
+                    echo "[DELE] ${LOCALNAME}" && rm ${LOCALFILE}
+                    echo "[COPY] ${FILENAME}" && cp ${FILEPATH} ${TARGET}
+                    ;;
+                2)
+                    echo "[KEEP] ${LOCALNAME} is more recent"
+                    echo "[SKIP] ${FILENAME} too old version"
+                    FILEPATH=${LOCALFILE}
+                    FILENAME=${LOCALNAME}
+                    ;;
+            esac
+        fi
+    done
+    if [[ $COPIED -eq 0 ]]; then
+        echo "[COPY] ${FILENAME} does not exist yet"
+        cp ${FILEPATH} ${TARGET}
+    fi
 }
 
 Main__interruptHandler()
@@ -140,10 +251,18 @@ Main__main()
     fi
     # install module
     cp $JAR_PATH $argv__KEYCLOAK/providers/
+    for DEPENDENCY in $(dirname $JAR_PATH)/libs/*.jar
+    do
+        copy_dependency ${DEPENDENCY} $argv__KEYCLOAK/providers/
+    done
 
-    add_configuration spi-realm-restapi-extension-api-enabled true
-    add_configuration spi-realm-restapi-extension-api-terms-of-use-acceptance-delay-days 60
-    $argv__KEYCLOAK/bin/$KC_EXE build --features=account-api
+    # configure module
+    cleanup_configuration
+    if [ -f "${MODULE_CONF}" ]; then
+        grep -v "^#" ${MODULE_CONF} |sed '/^[[:space:]]*$/d' |sed "s!PARAM_TARGET_URI!${argv__TARGET}!g" >> ${CONF_FILE}
+    fi
+
+    # $argv__KEYCLOAK/bin/$KC_EXE build
 
     exit 0
 }

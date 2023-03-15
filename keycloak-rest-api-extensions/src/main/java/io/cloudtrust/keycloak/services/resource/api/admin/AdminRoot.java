@@ -81,7 +81,7 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
     @Path("expired-tou-acceptance")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public List<DeletableUserRepresentation> expiredTermsOfUseAcceptance(@Context final HttpRequest request) {
+    public List<DeletableUserRepresentation> expiredTermsOfUseAcceptance(@Context final HttpRequest request, @Context HttpResponse response) {
         AdminAuth auth = authenticateRealmAdminRequest(request.getHttpHeaders());
         if (auth == null) {
             throw new NotAuthorizedException("Can't get AdminAuth");
@@ -128,7 +128,7 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
     @Path("support-infos")
     @GET
     @Produces(javax.ws.rs.core.MediaType.APPLICATION_JSON)
-    public List<EmailInfo> getSupportInformation(@Context final HttpRequest request, @QueryParam("email") String email) {
+    public List<EmailInfo> getSupportInformation(@Context final HttpRequest request, @Context HttpResponse response, @QueryParam("email") String email) {
         AdminAuth auth = authenticateRealmAdminRequest(request.getHttpHeaders());
         if (auth == null) {
             throw new NotAuthorizedException("unauthorized");
