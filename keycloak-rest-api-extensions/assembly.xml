@@ -11,6 +11,9 @@
             <source>install.sh</source>
             <fileMode>0755</fileMode>
         </file>
+        <file>
+            <source>module.conf</source>
+        </file>
     </files>
     <fileSets>
         <fileSet>
@@ -21,4 +24,13 @@
             </includes>
         </fileSet>
     </fileSets>
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>target/libs</outputDirectory>
+            <includes>
+                <include>io.cloudtrust:cloudtrust-common</include>
+                <include>io.cloudtrust:kc-cloudtrust-common</include>
+            </includes>
+        </dependencySet>
+    </dependencySets>
 </assembly>

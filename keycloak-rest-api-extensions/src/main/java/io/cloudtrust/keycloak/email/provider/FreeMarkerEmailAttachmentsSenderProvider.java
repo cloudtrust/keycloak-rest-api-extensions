@@ -10,9 +10,9 @@ import org.keycloak.email.EmailException;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.services.ServicesLogger;
 import org.keycloak.theme.FreeMarkerException;
-import org.keycloak.theme.FreeMarkerUtil;
 import org.keycloak.theme.Theme;
 import org.keycloak.theme.beans.MessageFormatterMethod;
+import org.keycloak.theme.freemarker.FreeMarkerProvider;
 import org.keycloak.truststore.HostnameVerificationPolicy;
 import org.keycloak.truststore.JSSETruststoreConfigurator;
 import org.keycloak.vault.VaultStringSecret;
@@ -48,15 +48,15 @@ import java.util.Properties;
  */
 public class FreeMarkerEmailAttachmentsSenderProvider {
     private final KeycloakSession session;
-    private final FreeMarkerUtil freeMarker;
+    private FreeMarkerProvider freeMarker;
     private Map<String, String> smtpConfig;
     private Locale defaultLocale;
 
     public FreeMarkerEmailAttachmentsSenderProvider(KeycloakSession session) {
-        this(session, new FreeMarkerUtil());
+        this(session, session.getProvider(FreeMarkerProvider.class));
     }
 
-    public FreeMarkerEmailAttachmentsSenderProvider(KeycloakSession session, FreeMarkerUtil freeMarker) {
+    public FreeMarkerEmailAttachmentsSenderProvider(KeycloakSession session, FreeMarkerProvider freeMarker) {
         this.session = session;
         this.freeMarker = freeMarker;
     }

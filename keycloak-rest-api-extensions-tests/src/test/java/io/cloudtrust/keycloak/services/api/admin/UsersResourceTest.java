@@ -170,8 +170,6 @@ class UsersResourceTest extends AbstractRestApiExtensionTest {
 
     @Test
     void testGetUsersWithGroupAndRole() throws IOException, URISyntaxException {
-        RealmResource testRealm = this.getRealm();
-
         List<NameValuePair> nvps = new ArrayList<>();
         nvps.add(new BasicNameValuePair("roleId", findRoleId("user")));
         nvps.add(new BasicNameValuePair("groupId", findGroupId("topGroup")));
@@ -213,8 +211,6 @@ class UsersResourceTest extends AbstractRestApiExtensionTest {
 
     @Test
     void testGetUsersWithGroupAndSearch() throws IOException, URISyntaxException {
-        RealmResource testRealm = this.getRealm();
-
         List<NameValuePair> nvps = new ArrayList<>();
         nvps.add(new BasicNameValuePair("groupId", findGroupId("topGroup")));
         nvps.add(new BasicNameValuePair("search", "topgroupuser2"));
@@ -239,6 +235,6 @@ class UsersResourceTest extends AbstractRestApiExtensionTest {
     }
 
     private UserRepresentation[] grabUsers(UsersPageRepresentation page) {
-        return page.getUsers().toArray(new UserRepresentation[page.getUsers().size()]);
+        return page.getUsers().toArray(new UserRepresentation[0]);
     }
 }

@@ -4,7 +4,6 @@ import io.cloudtrust.keycloak.ExecuteActionsEmailHelper;
 import io.cloudtrust.keycloak.delegate.CtUserModelDelegate;
 import io.cloudtrust.keycloak.email.model.UserWithOverridenEmail;
 import org.apache.commons.lang3.StringUtils;
-import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.HttpResponse;
@@ -54,8 +53,6 @@ import java.util.Map;
  * The inspiration for the fix came from org.keycloak.services.resources.admin.AdminRoot.
  */
 public class FixedAccountRestService extends AccountRestService {
-    private static final Logger logger = Logger.getLogger(FixedAccountRestService.class);
-
     private final KeycloakSession session;
     private final Auth auth;
     private final EventBuilder event;

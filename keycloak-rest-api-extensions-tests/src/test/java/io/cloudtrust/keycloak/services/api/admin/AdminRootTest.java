@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -42,7 +43,8 @@ class AdminRootTest extends AbstractRestApiExtensionTest {
 
     @Test
     void testGetSupportInformation() throws IOException, URISyntaxException {
-        List<NameValuePair> params = Collections.singletonList(new BasicNameValuePair("email", "john-doh@LOCALHOST"));
+        List<NameValuePair> params = new ArrayList<NameValuePair>();
+        params.add(new BasicNameValuePair("email", "john-doh@LOCALHOST"));
         List<EmailInfo> emailInfo = api().query(emailInfoListType, "GET", "/realms/master/api/admin/support-infos", params);
         assertThat(emailInfo.size(), is(1));
     }
