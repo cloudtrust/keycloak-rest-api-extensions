@@ -183,33 +183,33 @@ copy_dependency()
 
     FILENAME=$(basename ${FILEPATH})
     ROOTNAME=${FILENAME%-[0-9]*}
-    COPIED=0
 
-    for LOCALFILE in ${TARGET}/${ROOTNAME}*.jar
-    do
-        COPIED=1
-        LOCALNAME=$(basename ${LOCALFILE})
-        if [[ ${FILENAME} == ${LOCALNAME} ]]; then
-            echo "[SKIP] ${FILENAME} already exists"
-        else
-            VERSION1=$(getDependencyVersion ${FILENAME} ${ROOTNAME})
-            VERSION2=$(getDependencyVersion ${LOCALFILE} ${ROOTNAME})
-            COMPARE=$(vercomp ${VERSION1} ${VERSION2})
-            case $COMPARE in
-                1)
-                    echo "[DELE] ${LOCALNAME}" && rm ${LOCALFILE}
-                    echo "[COPY] ${FILENAME}" && cp ${FILEPATH} ${TARGET}
-                    ;;
-                2)
-                    echo "[KEEP] ${LOCALNAME} is more recent"
-                    echo "[SKIP] ${FILENAME} too old version"
-                    FILEPATH=${LOCALFILE}
-                    FILENAME=${LOCALNAME}
-                    ;;
-            esac
-        fi
-    done
-    if [[ $COPIED -eq 0 ]]; then
+    FOUND_FILES=$(find ${TARGET} -regex ".*/${ROOTNAME}.*\.jar")
+    if [ ! -z "${FOUND_FILES}" ]; then
+        for LOCALFILE in ${FOUND_FILES}
+        do
+            LOCALNAME=$(basename ${LOCALFILE})
+            if [[ ${FILENAME} == ${LOCALNAME} ]]; then
+                echo "[SKIP] ${FILENAME} already exists"
+            else
+                VERSION1=$(getDependencyVersion ${FILENAME} ${ROOTNAME})
+                VERSION2=$(getDependencyVersion ${LOCALFILE} ${ROOTNAME})
+                COMPARE=$(vercomp ${VERSION1} ${VERSION2})
+                case $COMPARE in
+                    1)
+                        echo "[DELE] ${LOCALNAME}" && rm ${LOCALFILE}
+                        echo "[COPY] ${FILENAME}" && cp ${FILEPATH} ${TARGET}
+                        ;;
+                    2)
+                        echo "[KEEP] ${LOCALNAME} is more recent"
+                        echo "[SKIP] ${FILENAME} too old version"
+                        FILEPATH=${LOCALFILE}
+                        FILENAME=${LOCALNAME}
+                        ;;
+                esac
+            fi
+        done
+    else
         echo "[COPY] ${FILENAME} does not exist yet"
         cp ${FILEPATH} ${TARGET}
     fi
