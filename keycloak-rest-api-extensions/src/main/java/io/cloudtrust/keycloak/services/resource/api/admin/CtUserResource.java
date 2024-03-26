@@ -46,6 +46,7 @@ import java.util.Map;
 
 public class CtUserResource extends UserResource {
     private static final Logger logger = Logger.getLogger(CtUserResource.class);
+    private static final String USER_EMAIL_MISSING = "User email missing";
 
     protected static final String ATTRIB_NAME_ID = "saml.persistent.name.id.for.*";
 
@@ -70,6 +71,7 @@ public class CtUserResource extends UserResource {
     @GET
     @NoCache
     @Produces(MediaType.APPLICATION_JSON)
+    @Override
     public UserRepresentation getUser() {
         UserRepresentation res = super.getUser();
         String nameId = this.user.getFirstAttribute(ATTRIB_NAME_ID);
@@ -89,16 +91,18 @@ public class CtUserResource extends UserResource {
             emailModel.setRecipient(user.getEmail());
         }
         if (StringUtils.isBlank(emailModel.getRecipient())) {
-            return ErrorResponse.error("User email missing", Response.Status.BAD_REQUEST);
+            return ErrorResponse.error(USER_EMAIL_MISSING, Response.Status.BAD_REQUEST);
         }
 
         if (!user.isEnabled()) {
             throw new WebApplicationException(ErrorResponse.error("User is disabled", Response.Status.BAD_REQUEST));
         }
 
-        Response error = setEmailTheme(emailModel.getTheming().getThemeRealmName());
-        if (error != null) {
-            return error;
+        if (emailModel.getTheming()!=null) {
+            Response error = setEmailTheme(emailModel.getTheming().getThemeRealmName());
+            if (error != null) {
+                return error;
+            }
         }
 
         Locale locale = session.getContext().resolveLocale(user);
@@ -109,7 +113,7 @@ public class CtUserResource extends UserResource {
         attributes.put("user", new ProfileBean(user));
         attributes.put("realmName", realm.getDisplayName());
         attributes.put("link", link);
-        if (emailModel.getTheming().getTemplateParameters() != null) {
+        if (emailModel.getTheming()!=null && emailModel.getTheming().getTemplateParameters() != null) {
             attributes.putAll(emailModel.getTheming().getTemplateParameters());
         }
 
@@ -152,7 +156,7 @@ public class CtUserResource extends UserResource {
         auth.users().requireManage(user);
 
         if (user.getEmail() == null) {
-            return ErrorResponse.error("User email missing", Response.Status.BAD_REQUEST);
+            return ErrorResponse.error(USER_EMAIL_MISSING, Response.Status.BAD_REQUEST);
         }
 
         validateUser(user);
@@ -175,7 +179,7 @@ public class CtUserResource extends UserResource {
             targetUser = new CtUserModelDelegate(user);
             targetUser.setEmail(emailToValidate);
         } else if (StringUtils.isBlank(user.getEmail())) {
-            return ErrorResponse.error("User email missing", Response.Status.BAD_REQUEST);
+            return ErrorResponse.error(USER_EMAIL_MISSING, Response.Status.BAD_REQUEST);
         }
 
         ClientModel client = getEnabledClientOrFail(clientId);
