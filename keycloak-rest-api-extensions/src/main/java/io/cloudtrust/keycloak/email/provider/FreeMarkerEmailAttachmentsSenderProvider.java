@@ -99,7 +99,7 @@ public class FreeMarkerEmailAttachmentsSenderProvider {
             Properties rb = theme.getMessages(locale);
             attributes.put("msg", new MessageFormatterMethod(locale, rb));
             attributes.put("properties", theme.getProperties());
-            String subject = new MessageFormat(rb.getProperty(theming.getSubjectKey(), theming.getSubjectKey()), locale).format(theming.getSubjectParameters().toArray());
+            String subject = new MessageFormat(rb.getProperty(theming.getSubjectKey(), theming.getSubjectKey()), locale).format(theming.getSubjectParametersAsArray());
             String textBody = loadTemplate(attributes, "text", theming.getTemplate(), theme);
             String htmlBody = loadTemplate(attributes, "html", theming.getTemplate(), theme);
 

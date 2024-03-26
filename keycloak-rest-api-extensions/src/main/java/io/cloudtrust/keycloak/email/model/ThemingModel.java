@@ -3,6 +3,8 @@ package io.cloudtrust.keycloak.email.model;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class ThemingModel {
     private String themeRealmName;
     private String locale;
@@ -37,6 +39,14 @@ public class ThemingModel {
 
     public List<String> getSubjectParameters() {
         return subjectParams;
+    }
+
+    @JsonIgnore
+    public String[] getSubjectParametersAsArray() {
+        if (subjectParams!=null) {
+            return subjectParams.toArray(new String[subjectParams.size()]);
+        }
+        return new String[0];
     }
 
     public void setSubjectParameters(List<String> subjectParams) {
