@@ -5,7 +5,9 @@ import io.cloudtrust.keycloak.email.model.AttachmentModel;
 import io.cloudtrust.keycloak.email.model.BasicMessageModel;
 import io.cloudtrust.keycloak.email.model.EmailModel;
 import io.cloudtrust.keycloak.email.model.ThemingModel;
+
 import org.apache.commons.lang3.StringUtils;
+import org.jboss.logging.Logger;
 import org.keycloak.email.EmailException;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.services.ServicesLogger;
@@ -47,6 +49,8 @@ import java.util.Properties;
  * @author fpe
  */
 public class FreeMarkerEmailAttachmentsSenderProvider {
+    private static final Logger logger = Logger.getLogger(FreeMarkerEmailAttachmentsSenderProvider.class);
+
     private final KeycloakSession session;
     private FreeMarkerProvider freeMarker;
     private Map<String, String> smtpConfig;
@@ -99,7 +103,7 @@ public class FreeMarkerEmailAttachmentsSenderProvider {
             Properties rb = theme.getMessages(locale);
             attributes.put("msg", new MessageFormatterMethod(locale, rb));
             attributes.put("properties", theme.getProperties());
-            String subject = new MessageFormat(rb.getProperty(theming.getSubjectKey(), theming.getSubjectKey()), locale).format(theming.getSubjectParameters().toArray());
+            String subject = new MessageFormat(rb.getProperty(theming.getSubjectKey(), theming.getSubjectKey()), locale).format(theming.getSubjectParametersAsArray());
             String textBody = loadTemplate(attributes, "text", theming.getTemplate(), theme);
             String htmlBody = loadTemplate(attributes, "html", theming.getTemplate(), theme);
 
@@ -114,6 +118,7 @@ public class FreeMarkerEmailAttachmentsSenderProvider {
         try {
             return freeMarker.processTemplate(attributes, templateRef, theme);
         } catch (final FreeMarkerException e) {
+            logger.error("Failed to load template "+templateRef, e);
             return null;
         }
     }

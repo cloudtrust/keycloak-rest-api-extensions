@@ -18,11 +18,14 @@ public class EmailSender {
         if (emailModel.getTheming() == null && emailModel.getBasicMessage() == null) {
             return ErrorResponse.error("Either BasicMessage or Theming configuration should be configured", Response.Status.BAD_REQUEST);
         }
-        if (StringUtils.isBlank(emailModel.getTheming().getTemplate())) {
-            return ErrorResponse.error("Template email missing", Response.Status.BAD_REQUEST);
-        }
-        if (StringUtils.isBlank(emailModel.getTheming().getSubjectKey())) {
-            return ErrorResponse.error("Subject missing", Response.Status.BAD_REQUEST);
+        if (emailModel.getTheming()!=null) {
+            if (StringUtils.isBlank(emailModel.getTheming().getTemplate())) {
+                return ErrorResponse.error("Template email missing", Response.Status.BAD_REQUEST);
+            }
+            
+            if (StringUtils.isBlank(emailModel.getTheming().getSubjectKey())) {
+                return ErrorResponse.error("Subject missing", Response.Status.BAD_REQUEST);
+            }
         }
 
         try {

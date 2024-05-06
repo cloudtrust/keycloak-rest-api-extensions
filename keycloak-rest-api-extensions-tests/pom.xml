@@ -30,6 +30,11 @@
             <groupId>io.cloudtrust</groupId>
             <artifactId>kc-cloudtrust-test-tools</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.cloudtrust</groupId>
+            <artifactId>cloudtrust-test-tools</artifactId>
+            <version>4.0.0</version>
+        </dependency>
     </dependencies>
 
     <repositories>
