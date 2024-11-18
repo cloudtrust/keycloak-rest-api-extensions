@@ -18,6 +18,8 @@ public abstract class AbstractRestApiExtensionTest extends AbstractInKeycloakTes
         // Clean events
         this.events().activate("test");
         this.events().clear();
+        this.adminEvents().activate("test");
+        this.adminEvents().clear();
 
         createDummyRealm("dummy1", "invalid-theme");
         createDummyRealm("dummy2", "keycloak");

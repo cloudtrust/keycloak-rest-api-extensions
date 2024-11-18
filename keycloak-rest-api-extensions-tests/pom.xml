@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.cloudtrust</groupId>
         <artifactId>kc-cloudtrust-testsuite</artifactId>
-        <version>20.0.0</version>
+        <version>20.0.4</version>
         <relativePath />
     </parent>
 
@@ -33,7 +33,7 @@
         <dependency>
             <groupId>io.cloudtrust</groupId>
             <artifactId>cloudtrust-test-tools</artifactId>
-            <version>4.0.0</version>
+            <version>4.0.4</version>
         </dependency>
     </dependencies>
 
