@@ -3,7 +3,9 @@ package io.cloudtrust.keycloak.services.resource.api.account;
 import io.cloudtrust.keycloak.ExecuteActionsEmailHelper;
 import io.cloudtrust.keycloak.delegate.CtUserModelDelegate;
 import io.cloudtrust.keycloak.email.model.UserWithOverridenEmail;
+import io.cloudtrust.keycloak.services.resource.api.admin.CtUserResource;
 import org.apache.commons.lang3.StringUtils;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.HttpResponse;
@@ -29,6 +31,7 @@ import org.keycloak.services.managers.Auth;
 import org.keycloak.services.resources.Cors;
 import org.keycloak.services.resources.LoginActionsService;
 import org.keycloak.services.resources.account.AccountRestService;
+import org.keycloak.util.JsonSerialization;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -44,6 +47,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +57,7 @@ import java.util.Map;
  * The inspiration for the fix came from org.keycloak.services.resources.admin.AdminRoot.
  */
 public class FixedAccountRestService extends AccountRestService {
+    private static final Logger logger = Logger.getLogger(FixedAccountRestService.class);
     private final KeycloakSession session;
     private final Auth auth;
     private final EventBuilder event;
@@ -100,6 +105,23 @@ public class FixedAccountRestService extends AccountRestService {
              */
             user.setEmailVerified(false);
         }
+
+        if (user != null && resp.getStatus() / 100 == 2) {
+            String representation = "";
+            try {
+                representation = JsonSerialization.writeValueAsString(rep);
+            } catch (IOException e) {
+                logger.warn("failed to serialize user representation for ACCOUNT_UPDATED event");
+            }
+
+            event.event(EventType.UPDATE_PROFILE)
+                    .user(user)
+                    .client(auth.getClient())
+                    .detail("ct_event_type", "ACCOUNT_UPDATED")
+                    .detail("username", user.getUsername())
+                    .detail("representation", representation)
+                    .success();
+        }
         return resp;
     }
 
@@ -121,14 +143,14 @@ public class FixedAccountRestService extends AccountRestService {
         if (removed) {
             event.event(EventType.UPDATE_PROFILE).user(delUser)
                     .client(auth.getClient())
-                    .detail("ct_event_type", "SELF_DELETE_ACCOUNT")
+                    .detail("ct_event_type", "ACCOUNT_DELETED")
                     .detail("username", delUser.getUsername())
                     .success();
             return Cors.add(request, Response.noContent()).auth().allowedOrigins(auth.getToken()).build();
         } else {
             event.event(EventType.UPDATE_PROFILE).user(delUser)
                     .client(auth.getClient())
-                    .detail("ct_event_type", "SELF_DELETE_ACCOUNT_ERROR")
+                    .detail("ct_event_type", "ACCOUNT_DELETED_ERROR")
                     .detail("username", delUser.getUsername())
                     .success();
             return ErrorResponse.error("User couldn't be deleted", Response.Status.BAD_REQUEST);
