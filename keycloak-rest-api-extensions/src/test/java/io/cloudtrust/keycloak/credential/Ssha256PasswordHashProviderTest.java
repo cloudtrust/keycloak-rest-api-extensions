@@ -8,7 +8,7 @@ import org.keycloak.models.credential.dto.PasswordSecretData;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class Ssha256PasswordHashProviderTest {
+class Ssha256PasswordHashProviderTest {
 
     @Test
     void encodeVerifyWorks() {

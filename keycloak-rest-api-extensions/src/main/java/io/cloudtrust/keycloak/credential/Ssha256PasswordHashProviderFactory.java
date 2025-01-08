@@ -19,17 +19,17 @@ public class Ssha256PasswordHashProviderFactory implements PasswordHashProviderF
 
     @Override
     public void init(Config.Scope config) {
-
+        // Nothing to do
     }
 
     @Override
     public void postInit(KeycloakSessionFactory factory) {
-
+        // Nothing to do
     }
 
     @Override
     public void close() {
-
+        // Nothing to do
     }
 
     @Override

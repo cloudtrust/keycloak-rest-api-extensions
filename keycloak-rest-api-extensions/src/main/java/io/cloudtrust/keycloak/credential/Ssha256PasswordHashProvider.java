@@ -16,6 +16,7 @@ import java.util.Arrays;
  * Implementation of the Salted SHA256 password hash algorithm.
  */
 public class Ssha256PasswordHashProvider implements PasswordHashProvider {
+    private static final String SSHA256_PREFIX = "{SSHA256}";
 
     @Override
     public boolean policyCheck(PasswordPolicy policy, PasswordCredentialModel credential) {
@@ -34,7 +35,7 @@ public class Ssha256PasswordHashProvider implements PasswordHashProvider {
             byte[] hash = digest.digest(ArrayUtils.addAll(rawPassword.getBytes(), salt));
 
             toEncode = ArrayUtils.addAll(hash, salt);
-            String value = "{SSHA256}" + Base64.encodeBytes(toEncode);
+            String value = SSHA256_PREFIX + Base64.encodeBytes(toEncode);
 
             return PasswordCredentialModel.createFromValues(Ssha256PasswordHashProviderFactory.ID, salt, 1, value);
         } catch (NoSuchAlgorithmException e) {
@@ -44,13 +45,13 @@ public class Ssha256PasswordHashProvider implements PasswordHashProvider {
 
     @Override
     public boolean verify(String rawPassword, PasswordCredentialModel credential) {
-        if (!credential.getPasswordSecretData().getValue().startsWith("{SSHA256}")) {
+        if (!credential.getPasswordSecretData().getValue().startsWith(SSHA256_PREFIX)) {
             // String is not properly formatted
             return false;
         }
 
         try {
-            byte[] decodedValue = Base64.decode(credential.getPasswordSecretData().getValue().substring("{SSHA256}".length()));
+            byte[] decodedValue = Base64.decode(credential.getPasswordSecretData().getValue().substring(SSHA256_PREFIX.length()));
 
             // For verification, the salt contained in the PasswordSecretData object is ignored, we only retrieve it
             // from the value

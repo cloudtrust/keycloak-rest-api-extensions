@@ -35,11 +35,6 @@
             <artifactId>cloudtrust-test-tools</artifactId>
             <version>4.0.4</version>
         </dependency>
-        <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-server-spi</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <repositories>
