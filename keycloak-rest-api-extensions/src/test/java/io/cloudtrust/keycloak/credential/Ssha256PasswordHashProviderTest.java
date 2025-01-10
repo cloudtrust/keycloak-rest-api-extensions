@@ -21,12 +21,18 @@ class Ssha256PasswordHashProviderTest {
 
     @Test
     void verifyWorks() {
+        String rawPassword = "H31103_Ca!";
+
         Ssha256PasswordHashProvider hashProvider = new Ssha256PasswordHashProvider();
         PasswordCredentialData credentialData = new PasswordCredentialData(1, "SSHA256");
         byte[] salt = {};
         PasswordSecretData secretData = new PasswordSecretData("{SSHA256}M2612WkI8a6ekLkqzzoihJB/YvW5wrt3Hgdr5NTubAMzOTd6cWNKcGxBOEVUNzNNUXZMcS9HU0hoVkhxZUd1dg==", salt);
         PasswordCredentialModel result = PasswordCredentialModel.createFromValues(credentialData, secretData);
 
-        assertThat(hashProvider.verify("H31103_Ca!", result), is(true));
+        PasswordSecretData secretData2 = new PasswordSecretData("{SSHA256}+UIu43tYsvyKingPAOKapvf/7FMPadCGhoPwa4vSzcI9bByRgJ3WxLAN", salt);
+        PasswordCredentialModel result2 = PasswordCredentialModel.createFromValues(credentialData, secretData2);
+
+        assertThat(hashProvider.verify(rawPassword, result), is(true));
+        assertThat(hashProvider.verify(rawPassword, result2), is(true));
     }
 }
