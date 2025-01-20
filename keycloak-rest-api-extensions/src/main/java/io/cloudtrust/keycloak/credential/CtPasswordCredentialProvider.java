@@ -1,6 +1,8 @@
 package io.cloudtrust.keycloak.credential;
 
 import io.cloudtrust.keycloak.Events;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Meter;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 import org.keycloak.TokenVerifier;
@@ -21,12 +23,15 @@ import org.keycloak.services.managers.AppAuthManager;
 import org.keycloak.services.resources.admin.AdminAuth;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
 
+import java.util.Map;
+
 public class CtPasswordCredentialProvider extends PasswordCredentialProvider {
 
     private static final Logger logger = Logger.getLogger(CtPasswordCredentialProvider.class);
 
-    public CtPasswordCredentialProvider(KeycloakSession session) {
-        super(session);
+    public CtPasswordCredentialProvider(KeycloakSession session, Meter.MeterProvider<Counter> meterProvider, boolean metricsEnabled,
+                                        boolean withRealmInMetric, boolean withAlgorithmInMetric, boolean withHashingStrengthInMetric, boolean withOutcomeInMetric) {
+        super(session, meterProvider, metricsEnabled, withRealmInMetric, withAlgorithmInMetric, withHashingStrengthInMetric, withOutcomeInMetric);
     }
 
     @Override
@@ -62,11 +67,11 @@ public class CtPasswordCredentialProvider extends PasswordCredentialProvider {
         String agentRealmName = issuer.substring(issuer.lastIndexOf("/") + 1);
         RealmModel agentRealm = session.realms().getRealmByName(agentRealmName);
 
-        if (agentRealm == null || agentRealm.getId().equals(realm.getId()) && agentUserId.equals(user.getId())) {
-            // self password creation or reset
+        if (agentRealm == null || agentUserId == null || agentRealm.getId().equals(realm.getId()) && agentUserId.equals(user.getId())) {
+            // self password creation or reset (or token does not contain agent information)
             emitUpdatePasswordEvent(realm, user, credentialId);
         } else {
-            // password created or resetted by another user (agent)
+            // password created or reset by another user (agent)
             UserModel agent = session.users().getUserById(agentRealm, agentUserId);
             ClientModel agentClient = session.clients().getClientByClientId(agentRealm, agentClientId);
 
@@ -75,7 +80,7 @@ public class CtPasswordCredentialProvider extends PasswordCredentialProvider {
             adminEventBuilder.operation(OperationType.CREATE)
                     .resource(ResourceType.CUSTOM)
                     .resourcePath("users", user.getId())
-                    .representation(new Representation(credentialId))
+                    .representation(Map.of("credentialId", credentialId, "credentialType", "password"))
                     .success();
         }
     }
@@ -84,18 +89,8 @@ public class CtPasswordCredentialProvider extends PasswordCredentialProvider {
         EventBuilder eventBuilder = new EventBuilder(realm, session, session.getContext().getConnection());
         eventBuilder.event(EventType.CUSTOM_REQUIRED_ACTION)
                 .user(user)
-                .detail(Events.CT_EVENT_TYPE, EventType.UPDATE_PASSWORD.toString())
+                .detail(Events.CT_EVENT_TYPE, EventType.RESET_PASSWORD.toString())
                 .detail("credentialId", credentialId)
                 .success();
-    }
-
-    private static class Representation {
-        Representation(String credentialId) {
-            this.credentialId = credentialId;
-            this.credentialType = "password";
-        }
-
-        public String credentialId;
-        public String credentialType;
     }
 }

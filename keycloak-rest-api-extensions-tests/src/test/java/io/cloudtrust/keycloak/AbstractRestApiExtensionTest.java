@@ -13,16 +13,17 @@ public abstract class AbstractRestApiExtensionTest extends AbstractInKeycloakTes
     @BeforeEach
     public void setupTest() throws IOException, InjectionException {
         this.injectComponents();
+        disableLightweightAccessToken("master", "admin-cli");
+
         this.createRealm("/testrealm.json");
-        this.api().initToken();
+        createDummyRealm("dummy1", "invalid-theme");
+        createDummyRealm("dummy2", "keycloak");
+
         // Clean events
         this.events().activate("test");
         this.events().clear();
         this.adminEvents().activate("test");
         this.adminEvents().clear();
-
-        createDummyRealm("dummy1", "invalid-theme");
-        createDummyRealm("dummy2", "keycloak");
     }
 
     @AfterEach

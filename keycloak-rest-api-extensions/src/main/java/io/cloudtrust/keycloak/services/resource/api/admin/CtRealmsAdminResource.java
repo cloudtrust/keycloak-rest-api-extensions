@@ -1,27 +1,26 @@
 package io.cloudtrust.keycloak.services.resource.api.admin;
 
-import org.jboss.resteasy.spi.ResteasyProviderFactory;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.keycloak.common.ClientConnection;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
-import org.keycloak.protocol.oidc.TokenManager;
-import org.keycloak.services.ForbiddenException;
 import org.keycloak.services.managers.RealmManager;
 import org.keycloak.services.resources.admin.AdminAuth;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 import org.keycloak.services.resources.admin.permissions.AdminPermissions;
 
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
+public class CtRealmsAdminResource {
+    private KeycloakSession session;
+    private AdminAuth auth;
 
-public class RealmsAdminResource extends org.keycloak.services.resources.admin.RealmsAdminResource {
-    public RealmsAdminResource(AdminAuth auth, TokenManager tokenManager, KeycloakSession session) {
-        super(auth, tokenManager);
+    public CtRealmsAdminResource(AdminAuth auth, KeycloakSession session) {
+        this.auth = auth;
         this.session = session;
-        this.clientConnection = session.getContext().getConnection();
     }
 
     /**
@@ -32,8 +31,7 @@ public class RealmsAdminResource extends org.keycloak.services.resources.admin.R
      * @return
      */
     @Path("{realm}")
-    @Override
-    public org.keycloak.services.resources.admin.RealmAdminResource getRealmAdmin(@Context final HttpHeaders headers, @PathParam("realm") final String name) {
+    public CtRealmAdminResource getRealmAdmin(@PathParam("realm") @Parameter(description = "realm name (not id!)") final String name) {
         RealmManager realmManager = new RealmManager(session);
         RealmModel realm = realmManager.getRealmByName(name);
         if (realm == null) throw new NotFoundException("Realm not found.");
@@ -43,11 +41,10 @@ public class RealmsAdminResource extends org.keycloak.services.resources.admin.R
         }
         AdminPermissionEvaluator realmAuth = AdminPermissions.evaluator(session, realm, auth);
 
+        ClientConnection clientConnection = session.getContext().getConnection();
         AdminEventBuilder adminEvent = new AdminEventBuilder(realm, auth, session, clientConnection);
         session.getContext().setRealm(realm);
 
-        org.keycloak.services.resources.admin.RealmAdminResource adminResource = new RealmAdminResource(realmAuth, realm, tokenManager, adminEvent, session);
-        ResteasyProviderFactory.getInstance().injectProperties(adminResource);
-        return adminResource;
+        return new CtRealmAdminResource(realmAuth, adminEvent, session);
     }
 }

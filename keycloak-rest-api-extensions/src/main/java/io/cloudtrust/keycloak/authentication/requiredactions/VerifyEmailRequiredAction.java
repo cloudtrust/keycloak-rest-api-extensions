@@ -3,6 +3,8 @@ package io.cloudtrust.keycloak.authentication.requiredactions;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.cloudtrust.keycloak.ExecuteActionsEmailHelper;
 import io.cloudtrust.keycloak.email.model.UserWithOverridenEmail;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilderException;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 import org.keycloak.Config.Scope;
@@ -24,8 +26,6 @@ import org.keycloak.models.UserModel;
 import org.keycloak.protocol.AuthorizationEndpointBase;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilderException;
 import java.util.Collections;
 import java.util.Objects;
 
@@ -38,9 +38,9 @@ public class VerifyEmailRequiredAction implements RequiredActionProvider, Requir
     private static final String REQUIRED_ACTION_ID = "ct-verify-email";
 
     static class CtVerifyEmailActionToken extends DefaultActionToken {
-		private static final long serialVersionUID = 1L;
+        private static final long serialVersionUID = 1L;
 
-		private static final String JSON_FIELD_ORIGINAL_AUTHENTICATION_SESSION_ID = "oasid";
+        private static final String JSON_FIELD_ORIGINAL_AUTHENTICATION_SESSION_ID = "oasid";
 
         @JsonProperty(value = JSON_FIELD_ORIGINAL_AUTHENTICATION_SESSION_ID)
         private String originalAuthenticationSessionId;
@@ -106,7 +106,7 @@ public class VerifyEmailRequiredAction implements RequiredActionProvider, Requir
         }
 
         LoginFormsProvider loginFormsProvider = context.form()
-                .setAttribute("user", new ProfileBean(user));
+                .setAttribute("user", new ProfileBean(user, context.getSession()));
         Response challenge = loginFormsProvider.createResponse(UserModel.RequiredAction.VERIFY_EMAIL);
         context.challenge(challenge);
     }

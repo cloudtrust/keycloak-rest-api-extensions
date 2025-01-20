@@ -1,9 +1,15 @@
 package io.cloudtrust.keycloak.services.resource.api.account;
 
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.spi.HttpRequest;
-import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.events.EventBuilder;
+import org.keycloak.http.HttpRequest;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.Constants;
 import org.keycloak.models.KeycloakSession;
@@ -11,16 +17,10 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.services.managers.AppAuthManager;
 import org.keycloak.services.managers.Auth;
 import org.keycloak.services.managers.AuthenticationManager;
-import org.keycloak.services.resources.account.AccountConsole;
-import org.keycloak.services.resources.account.AccountFormService;
+import org.keycloak.services.resource.AccountResourceProvider;
+import org.keycloak.services.resources.account.CorsPreflightService;
 import org.keycloak.theme.Theme;
 
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.List;
 
@@ -28,19 +28,18 @@ import java.util.List;
  * This is copy of org.keycloak.services.resources.account.AccountLoader.
  * It redirects class CorsPreflightService and AccountRestService to our fixed versions.
  */
-public class AccountLoader extends org.keycloak.services.resources.account.AccountLoader {
-    private static final Logger logger = Logger.getLogger(AccountLoader.class);
+public class CtAccountLoader {
+    private static final Logger logger = Logger.getLogger(CtAccountLoader.class);
 
     private KeycloakSession session;
     private EventBuilder event;
 
-    public AccountLoader(KeycloakSession session, EventBuilder event) {
-        super(session, event);
+    public CtAccountLoader(KeycloakSession session, EventBuilder event) {
         this.session = session;
         this.event = event;
     }
 
-    @Override
+    @Path("/")
     public Object getAccountService() {
         RealmModel realm = session.getContext().getRealm();
 
@@ -50,16 +49,16 @@ public class AccountLoader extends org.keycloak.services.resources.account.Accou
             throw new NotFoundException("account management not enabled");
         }
 
-        HttpRequest request = session.getContext().getContextObject(HttpRequest.class);
+        HttpRequest request = session.getContext().getHttpRequest();
         HttpHeaders headers = session.getContext().getRequestHeaders();
         MediaType content = headers.getMediaType();
         List<MediaType> accepts = headers.getAcceptableMediaTypes();
 
         Theme theme = getTheme();
-        boolean deprecatedAccount = isDeprecatedFormsAccountConsole(theme);
+        AccountResourceProvider accountResourceProvider = copiedFromKCGetAccountResourceProvider(theme);
 
         if (HttpMethod.OPTIONS.equals(request.getHttpMethod())) {
-            return new FixedCorsPreflightService(request);
+            return new CorsPreflightService();
         } else if ((accepts.contains(MediaType.APPLICATION_JSON_TYPE) || MediaType.APPLICATION_JSON_TYPE.equals(content)) && !session.getContext().getUri().getPath().endsWith("keycloak.json")) {
             AppAuthManager.BearerTokenAuthenticator bearerAuthenticator = new AppAuthManager.BearerTokenAuthenticator(session);
             AuthenticationManager.AuthResult authResult = bearerAuthenticator
@@ -71,36 +70,28 @@ public class AccountLoader extends org.keycloak.services.resources.account.Accou
             }
 
             Auth auth = new Auth(session.getContext().getRealm(), authResult.getToken(), authResult.getUser(), client, authResult.getSession(), false);
-            FixedAccountRestService accountRestService = new FixedAccountRestService(session, auth, client, event);
-            ResteasyProviderFactory.getInstance().injectProperties(accountRestService);
-            accountRestService.init();
-            return accountRestService;
+            return new FixedAccountRestService(session, auth, event);
+        } else if (accountResourceProvider != null) {
+            return accountResourceProvider.getResource();
         } else {
-            if (deprecatedAccount) {
-                AccountFormService accountFormService = new AccountFormService(realm, client, event);
-                ResteasyProviderFactory.getInstance().injectProperties(accountFormService);
-                accountFormService.init();
-                return accountFormService;
-            } else {
-                AccountConsole console = new AccountConsole(realm, client, theme);
-                ResteasyProviderFactory.getInstance().injectProperties(console);
-                console.init();
-                return console;
-            }
+            throw new NotFoundException();
         }
+    }
+
+    /* copied/pasted from Keycloak AccountLoader, to be used by getAccountService() */
+    private AccountResourceProvider copiedFromKCGetAccountResourceProvider(Theme theme) {
+        try {
+            if (theme.getProperties().containsKey(Theme.ACCOUNT_RESOURCE_PROVIDER_KEY)) {
+                return session.getProvider(AccountResourceProvider.class, theme.getProperties().getProperty(Theme.ACCOUNT_RESOURCE_PROVIDER_KEY));
+            }
+        } catch (IOException ignore) {
+        }
+        return session.getProvider(AccountResourceProvider.class);
     }
 
     private Theme getTheme() {
         try {
             return session.theme().getTheme(Theme.Type.ACCOUNT);
-        } catch (IOException e) {
-            throw new InternalServerErrorException(e);
-        }
-    }
-
-    private boolean isDeprecatedFormsAccountConsole(Theme theme) {
-        try {
-            return Boolean.parseBoolean(theme.getProperties().getProperty("deprecatedMode", "true"));
         } catch (IOException e) {
             throw new InternalServerErrorException(e);
         }

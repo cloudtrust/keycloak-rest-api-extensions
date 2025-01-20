@@ -1,4 +1,4 @@
-package io.cloudtrust.keycloak.delegate;
+package io.cloudtrust.keycloak.authentication.delegate;
 
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.component.ComponentModel;
@@ -17,10 +17,12 @@ import org.keycloak.models.OTPPolicy;
 import org.keycloak.models.ParConfig;
 import org.keycloak.models.PasswordPolicy;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.RequiredActionConfigModel;
 import org.keycloak.models.RequiredActionProviderModel;
 import org.keycloak.models.RequiredCredentialModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.models.WebAuthnPolicy;
+import org.keycloak.representations.idm.RealmRepresentation.BruteForceStrategy;
 
 import java.util.Map;
 import java.util.Set;
@@ -71,33 +73,6 @@ public class RealmModelDelegate implements RealmModel {
     @Override
     public Stream<RoleModel> searchForRolesStream(String search, Integer first, Integer max) {
         return null;
-    }
-
-    @Override
-    @Deprecated
-    /**
-     * @deprecated Default roles are now managed by {@link org.keycloak.models.RealmModel#getDefaultRole()}. This method will be removed.
-     */
-    public Stream<String> getDefaultRolesStream() {
-        return delegate.getDefaultRolesStream();
-    }
-
-    @Override
-    @Deprecated
-    /**
-     * @deprecated Default roles are now managed by {@link org.keycloak.models.RealmModel#getDefaultRole()}. This method will be removed.
-     */
-    public void addDefaultRole(String name) {
-        delegate.addDefaultRole(name);
-    }
-
-    @Override
-    @Deprecated
-    /**
-     * @deprecated Default roles are now managed by {@link org.keycloak.models.RealmModel#getDefaultRole()}. This method will be removed.
-     */
-    public void removeDefaultRoles(String... defaultRoles) {
-        delegate.removeDefaultRoles(defaultRoles);
     }
 
     @Override
@@ -816,46 +791,55 @@ public class RealmModelDelegate implements RealmModel {
     }
 
     @Override
+    @Deprecated(forRemoval = true)
     public IdentityProviderModel getIdentityProviderByAlias(String alias) {
         return delegate.getIdentityProviderByAlias(alias);
     }
 
     @Override
+    @Deprecated(forRemoval = true)
     public void addIdentityProvider(IdentityProviderModel identityProvider) {
         delegate.addIdentityProvider(identityProvider);
     }
 
     @Override
+    @Deprecated(forRemoval = true)
     public void removeIdentityProviderByAlias(String alias) {
         delegate.removeIdentityProviderByAlias(alias);
     }
 
     @Override
+    @Deprecated(forRemoval = true)
     public void updateIdentityProvider(IdentityProviderModel identityProvider) {
         delegate.updateIdentityProvider(identityProvider);
     }
 
     @Override
+    @Deprecated(forRemoval = true)
     public IdentityProviderMapperModel addIdentityProviderMapper(IdentityProviderMapperModel model) {
         return delegate.addIdentityProviderMapper(model);
     }
 
     @Override
+    @Deprecated(forRemoval = true)
     public void removeIdentityProviderMapper(IdentityProviderMapperModel mapping) {
         delegate.removeIdentityProviderMapper(mapping);
     }
 
     @Override
+    @Deprecated(forRemoval = true)
     public void updateIdentityProviderMapper(IdentityProviderMapperModel mapping) {
         delegate.updateIdentityProviderMapper(mapping);
     }
 
     @Override
+    @Deprecated(forRemoval = true)
     public IdentityProviderMapperModel getIdentityProviderMapperById(String id) {
         return delegate.getIdentityProviderMapperById(id);
     }
 
     @Override
+    @Deprecated(forRemoval = true)
     public IdentityProviderMapperModel getIdentityProviderMapperByName(String brokerAlias, String name) {
         return delegate.getIdentityProviderMapperByName(brokerAlias, name);
     }
@@ -1001,6 +985,7 @@ public class RealmModelDelegate implements RealmModel {
     }
 
     @Override
+    @Deprecated(forRemoval = true)
     public boolean isIdentityFederationEnabled() {
         return delegate.isIdentityFederationEnabled();
     }
@@ -1211,16 +1196,19 @@ public class RealmModelDelegate implements RealmModel {
     }
 
     @Override
+    @Deprecated(forRemoval = true)
     public Stream<IdentityProviderModel> getIdentityProvidersStream() {
         return delegate.getIdentityProvidersStream();
     }
 
     @Override
+    @Deprecated(forRemoval = true)
     public Stream<IdentityProviderMapperModel> getIdentityProviderMappersStream() {
         return delegate.getIdentityProviderMappersStream();
     }
 
     @Override
+    @Deprecated(forRemoval = true)
     public Stream<IdentityProviderMapperModel> getIdentityProviderMappersByAliasStream(String brokerAlias) {
         return delegate.getIdentityProviderMappersByAliasStream(brokerAlias);
     }
@@ -1266,22 +1254,15 @@ public class RealmModelDelegate implements RealmModel {
     }
 
     @Override
+    @Deprecated(forRemoval = true)
     public Stream<GroupModel> getTopLevelGroupsStream() {
         return delegate.getTopLevelGroupsStream();
     }
 
     @Override
+    @Deprecated(forRemoval = true)
     public Stream<GroupModel> getTopLevelGroupsStream(Integer first, Integer max) {
         return delegate.getTopLevelGroupsStream(first, max);
-    }
-
-    @Override
-    @Deprecated
-    /**
-     * @deprecated Use {@link GroupProvider#searchForGroupByNameStream(RealmModel, String, Boolean, Integer, Integer)} instead.
-     */
-    public Stream<GroupModel> searchForGroupByNameStream(String search, Integer first, Integer max) {
-        return delegate.searchForGroupByNameStream(search, first, max);
     }
 
     @Override
@@ -1357,5 +1338,105 @@ public class RealmModelDelegate implements RealmModel {
     @Override
     public ParConfig getParPolicy() {
         return this.delegate.getParPolicy();
+    }
+
+    @Override
+    public boolean isOrganizationsEnabled() {
+        return this.delegate.isOrganizationsEnabled();
+    }
+
+    @Override
+    public void setOrganizationsEnabled(boolean organizationsEnabled) {
+        this.delegate.setOrganizationsEnabled(organizationsEnabled);
+    }
+
+    @Override
+    public int getMaxTemporaryLockouts() {
+        return this.delegate.getMaxTemporaryLockouts();
+    }
+
+    @Override
+    public void setMaxTemporaryLockouts(int val) {
+        this.delegate.setMaxTemporaryLockouts(val);
+    }
+
+    @Override
+    public BruteForceStrategy getBruteForceStrategy() {
+        return this.delegate.getBruteForceStrategy();
+    }
+
+    @Override
+    public void setBruteForceStrategy(BruteForceStrategy val) {
+        this.delegate.setBruteForceStrategy(val);
+    }
+
+    @Override
+    public Stream<ClientModel> searchClientByAuthenticationFlowBindingOverrides(Map<String, String> overrides, Integer firstResult, Integer maxResults) {
+        return this.delegate.searchClientByAuthenticationFlowBindingOverrides(overrides, firstResult, maxResults);
+    }
+
+    @Override
+    public AuthenticationFlowModel getFirstBrokerLoginFlow() {
+        return this.delegate.getFirstBrokerLoginFlow();
+    }
+
+    @Override
+    public void setFirstBrokerLoginFlow(AuthenticationFlowModel flow) {
+        this.delegate.setFirstBrokerLoginFlow(flow);
+    }
+
+    @Override
+    public RequiredActionConfigModel getRequiredActionConfigById(String id) {
+        return this.delegate.getRequiredActionConfigById(id);
+    }
+
+    @Override
+    public RequiredActionConfigModel getRequiredActionConfigByAlias(String alias) {
+        return this.delegate.getRequiredActionConfigByAlias(alias);
+    }
+
+    @Override
+    public void removeRequiredActionProviderConfig(RequiredActionConfigModel model) {
+        this.delegate.removeRequiredActionProviderConfig(model);
+    }
+
+    @Override
+    public void updateRequiredActionConfig(RequiredActionConfigModel model) {
+        this.delegate.updateRequiredActionConfig(model);
+    }
+
+    @Override
+    public Stream<RequiredActionConfigModel> getRequiredActionConfigsStream() {
+        return this.delegate.getRequiredActionConfigsStream();
+    }
+
+    @Override
+    public boolean isAdminPermissionsEnabled() {
+        return false;
+    }
+
+    @Override
+    public void setAdminPermissionsEnabled(boolean adminPermissionsEnabled) {
+        this.delegate.setAdminPermissionsEnabled(adminPermissionsEnabled);
+    }
+
+    @Override
+    public boolean isVerifiableCredentialsEnabled() {
+        return this.delegate.isVerifiableCredentialsEnabled();
+    }
+
+    @Override
+    public void setVerifiableCredentialsEnabled(boolean verifiableCredentialsEnabled) {
+        this.delegate.setVerifiableCredentialsEnabled(verifiableCredentialsEnabled);
+    }
+
+    @Override
+    public ClientModel getAdminPermissionsClient() {
+        return this.delegate.getAdminPermissionsClient();
+    }
+
+    @Override
+    public void setAdminPermissionsClient(ClientModel client) {
+        this.delegate.setAdminPermissionsClient(client);
     }
 }
