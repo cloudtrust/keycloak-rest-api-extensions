@@ -1,4 +1,4 @@
-package io.cloudtrust.keycloak.delegate;
+package io.cloudtrust.keycloak.authentication.delegate;
 
 import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.UserModelDelegate;

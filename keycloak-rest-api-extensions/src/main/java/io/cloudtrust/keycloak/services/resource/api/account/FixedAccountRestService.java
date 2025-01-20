@@ -1,14 +1,11 @@
 package io.cloudtrust.keycloak.services.resource.api.account;
 
 import io.cloudtrust.keycloak.ExecuteActionsEmailHelper;
-import io.cloudtrust.keycloak.delegate.CtUserModelDelegate;
+import io.cloudtrust.keycloak.authentication.delegate.CtUserModelDelegate;
 import io.cloudtrust.keycloak.email.model.UserWithOverridenEmail;
-import io.cloudtrust.keycloak.services.resource.api.admin.CtUserResource;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.annotations.cache.NoCache;
-import org.jboss.resteasy.spi.HttpRequest;
-import org.jboss.resteasy.spi.HttpResponse;
+import org.jboss.resteasy.reactive.NoCache;
 import org.keycloak.common.Profile;
 import org.keycloak.common.enums.AccountRestApiVersion;
 import org.keycloak.email.EmailException;
@@ -16,8 +13,8 @@ import org.keycloak.email.EmailTemplateProvider;
 import org.keycloak.email.freemarker.beans.ProfileBean;
 import org.keycloak.events.EventBuilder;
 import org.keycloak.events.EventType;
+import org.keycloak.http.HttpRequest;
 import org.keycloak.models.AccountRoles;
-import org.keycloak.models.ClientModel;
 import org.keycloak.models.Constants;
 import org.keycloak.models.KeycloakContext;
 import org.keycloak.models.KeycloakSession;
@@ -28,25 +25,26 @@ import org.keycloak.representations.account.UserRepresentation;
 import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.ServicesLogger;
 import org.keycloak.services.managers.Auth;
-import org.keycloak.services.resources.Cors;
+import org.keycloak.services.cors.Cors;
 import org.keycloak.services.resources.LoginActionsService;
+import org.keycloak.services.resources.account.AccountCredentialResource;
 import org.keycloak.services.resources.account.AccountRestService;
 import org.keycloak.util.JsonSerialization;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -68,8 +66,8 @@ public class FixedAccountRestService extends AccountRestService {
     @Context
     private HttpRequest request;
 
-    public FixedAccountRestService(KeycloakSession session, Auth auth, ClientModel client, EventBuilder event) {
-        super(session, auth, client, event, AccountRestApiVersion.V1_ALPHA1);
+    public FixedAccountRestService(KeycloakSession session, Auth auth, EventBuilder event) {
+        super(session, auth, event, AccountRestApiVersion.V1_ALPHA1);
         this.session = session;
         this.auth = auth;
         this.event = event;
@@ -77,13 +75,14 @@ public class FixedAccountRestService extends AccountRestService {
         this.realm = auth.getRealm();
     }
 
+    @Override
     @Path("/credentials")
-    public FixedAccountCredentialResource credentials(@Context final HttpRequest request, @Context HttpResponse response) {
-        Cors.add(request).allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().build(response);
+    public AccountCredentialResource credentials() {
+        Cors.builder().allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().add();
         if (!Profile.isFeatureEnabled(Profile.Feature.ACCOUNT_API)) {
             throw new NotFoundException();
         }
-        return new FixedAccountCredentialResource(session, event, user, auth);
+        return new FixedAccountCredentialResource(session, user, auth, event);
     }
 
     /**
@@ -146,14 +145,14 @@ public class FixedAccountRestService extends AccountRestService {
                     .detail("ct_event_type", "ACCOUNT_DELETED")
                     .detail("username", delUser.getUsername())
                     .success();
-            return Cors.add(request, Response.noContent()).auth().allowedOrigins(auth.getToken()).build();
+            return Cors.builder().auth().allowedOrigins(auth.getToken()).add(Response.noContent());
         } else {
             event.event(EventType.UPDATE_PROFILE).user(delUser)
                     .client(auth.getClient())
                     .detail("ct_event_type", "ACCOUNT_DELETED_ERROR")
                     .detail("username", delUser.getUsername())
                     .success();
-            return ErrorResponse.error("User couldn't be deleted", Response.Status.BAD_REQUEST);
+            throw ErrorResponse.error("User couldn't be deleted", Response.Status.BAD_REQUEST);
         }
     }
 
@@ -175,7 +174,7 @@ public class FixedAccountRestService extends AccountRestService {
             targetUser = new CtUserModelDelegate(user);
             targetUser.setEmail(emailToValidate);
         } else if (StringUtils.isBlank(user.getEmail())) {
-            return ErrorResponse.error("User email missing", Status.BAD_REQUEST);
+            throw ErrorResponse.error("User email missing", Status.BAD_REQUEST);
         }
 
         try {
@@ -184,7 +183,7 @@ public class FixedAccountRestService extends AccountRestService {
             return Response.noContent().build();
         } catch (EmailException e) {
             ServicesLogger.LOGGER.failedToSendActionsEmail(e);
-            return ErrorResponse.error("Failed to send execute actions email", Status.INTERNAL_SERVER_ERROR);
+            throw ErrorResponse.error("Failed to send execute actions email", Status.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -193,14 +192,14 @@ public class FixedAccountRestService extends AccountRestService {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response sendMail(@QueryParam("subject") String subjectFormatKey, @QueryParam("template") String template, @QueryParam("recipient") String recipient, Map<String, String> parameters) {
         if (StringUtils.isBlank(template)) {
-            return ErrorResponse.error("Template email missing", Status.BAD_REQUEST);
+        	throw ErrorResponse.error("Template email missing", Status.BAD_REQUEST);
         }
         if (StringUtils.isBlank(subjectFormatKey)) {
-            return ErrorResponse.error("Subject missing", Status.BAD_REQUEST);
+        	throw ErrorResponse.error("Subject missing", Status.BAD_REQUEST);
         }
         UserWithOverridenEmail userWithEmail = new UserWithOverridenEmail(user, recipient);
         if (StringUtils.isBlank(userWithEmail.getEmail())) {
-            return ErrorResponse.error("User email missing", Status.BAD_REQUEST);
+        	throw ErrorResponse.error("User email missing", Status.BAD_REQUEST);
         }
 
         if (!user.isEnabled()) {
@@ -217,7 +216,7 @@ public class FixedAccountRestService extends AccountRestService {
                 .setUser(userWithEmail)
                 .setAuthenticationSession(context.getAuthenticationSession());
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put("user", new ProfileBean(user));
+        attributes.put("user", new ProfileBean(user, session));
         attributes.put("realmName", realm.getDisplayName());
         attributes.put("link", link);
         attributes.putAll(parameters);

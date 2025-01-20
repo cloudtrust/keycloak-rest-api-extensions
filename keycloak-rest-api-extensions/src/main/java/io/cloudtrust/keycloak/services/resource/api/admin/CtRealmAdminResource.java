@@ -3,43 +3,37 @@ package io.cloudtrust.keycloak.services.resource.api.admin;
 import io.cloudtrust.keycloak.email.EmailSender;
 import io.cloudtrust.keycloak.email.model.EmailModel;
 import org.apache.commons.lang3.StringUtils;
-import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
-import org.keycloak.protocol.oidc.TokenManager;
 import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.resources.LoginActionsService;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-public class RealmAdminResource extends org.keycloak.services.resources.admin.RealmAdminResource {
-
+public class CtRealmAdminResource {
+    private final AdminPermissionEvaluator auth;
     private final AdminEventBuilder adminEvent;
+    private final KeycloakSession session;
 
-    public RealmAdminResource(AdminPermissionEvaluator auth, RealmModel realm, TokenManager tokenManager,
-                              AdminEventBuilder adminEvent, KeycloakSession session) {
-        super(auth, realm, tokenManager, adminEvent);
+    public CtRealmAdminResource(AdminPermissionEvaluator auth, AdminEventBuilder adminEvent, KeycloakSession session) {
+        this.auth = auth;
         this.adminEvent = adminEvent;
         this.session = session;
     }
 
     @Path("users")
-    @Override
-    public UsersResource users() {
-        UsersResource users = new UsersResource(session, auth, adminEvent);
-        ResteasyProviderFactory.getInstance().injectProperties(users);
-        //resourceContext.initResource(users);
-        return users;
+    public CtUsersResource users() {
+        return new CtUsersResource(session, auth, adminEvent);
     }
 
     @Path("statistics")
@@ -54,9 +48,10 @@ public class RealmAdminResource extends org.keycloak.services.resources.admin.Re
         auth.users().requireManage();
 
         if (StringUtils.isBlank(emailModel.getRecipient())) {
-            return ErrorResponse.error("Recipient email missing", Response.Status.BAD_REQUEST);
+            throw ErrorResponse.error("Recipient email missing", Response.Status.BAD_REQUEST);
         }
 
+        RealmModel realm = this.session.getContext().getRealm();
         Locale locale = realm.getDefaultLocale() != null ? Locale.forLanguageTag(realm.getDefaultLocale()) : Locale.ENGLISH;
         UriBuilder builder = LoginActionsService.loginActionsBaseUrl(session.getContext().getUri());
         String link = builder.build(session.getContext().getRealm().getName()).toString() + "/";
@@ -66,6 +61,6 @@ public class RealmAdminResource extends org.keycloak.services.resources.admin.Re
             emailModel.getTheming().getTemplateParameters().forEach(attributes::put);
         }
 
-        return EmailSender.sendMail(this.session, this.realm, emailModel, locale, attributes);
+        return EmailSender.sendMail(this.session, emailModel, locale, attributes);
     }
 }
