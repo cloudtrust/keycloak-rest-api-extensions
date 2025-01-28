@@ -52,7 +52,7 @@ public class FreeMarkerEmailAttachmentsSenderProvider {
     private static final Logger logger = Logger.getLogger(FreeMarkerEmailAttachmentsSenderProvider.class);
 
     private final KeycloakSession session;
-    private FreeMarkerProvider freeMarker;
+    private final FreeMarkerProvider freeMarker;
     private Map<String, String> smtpConfig;
     private Locale defaultLocale;
 
