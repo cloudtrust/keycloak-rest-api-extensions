@@ -18,6 +18,17 @@ import java.util.Map;
 
 public class EmailSender {
     public static Response sendMail(KeycloakSession session, RealmModel realm, EmailModel emailModel, Locale locale, Map<String, Object> attributes) {
+        String receiverAddress = emailModel.getRecipient();
+
+        EventBuilder eventBuilder = new EventBuilder(realm, session, session.getContext().getConnection());
+        eventBuilder.event(EventType.CUSTOM_REQUIRED_ACTION)
+                .user(session.users().getUserByEmail(realm, receiverAddress))
+                .detail("receiverAddress", receiverAddress)
+                .detail("themeRealmName", emailModel.getTheming().getThemeRealmName())
+                .detail("locale", emailModel.getTheming().getLocale())
+                .detail("subjectKey", emailModel.getTheming().getSubjectKey())
+                .detail("template", emailModel.getTheming().getTemplate());
+
         if (emailModel.getTheming() == null && emailModel.getBasicMessage() == null) {
             return ErrorResponse.error("Either BasicMessage or Theming configuration should be configured", Response.Status.BAD_REQUEST);
         }
@@ -37,21 +48,10 @@ public class EmailSender {
                     .setDefaultLocale(locale)
                     .send(emailModel, attributes);
 
-            String receiverAddress = emailModel.getRecipient();
-
-            EventBuilder eventBuilder = new EventBuilder(realm, session, session.getContext().getConnection());
-            eventBuilder.event(EventType.CUSTOM_REQUIRED_ACTION)
-                    .user(session.users().getUserByEmail(realm, receiverAddress))
-                    .detail(Events.CT_EVENT_TYPE, "EMAIL_SENT")
-                    .detail("receiverAddress", receiverAddress)
-                    .detail("themeRealmName", emailModel.getTheming().getThemeRealmName())
-                    .detail("locale", emailModel.getTheming().getLocale())
-                    .detail("subjectKey", emailModel.getTheming().getSubjectKey())
-                    .detail("template", emailModel.getTheming().getTemplate())
-                    .success();
-
+            eventBuilder.detail(Events.CT_EVENT_TYPE, "EMAIL_SENT").success();
             return Response.noContent().build();
         } catch (EmailException e) {
+            eventBuilder.detail(Events.CT_EVENT_TYPE, "EMAIL_SENDING_FAILURE").error("Failed to send email");
             throw new WebApplicationException("Can't send mail to " + emailModel.getRecipient(), e);
         }
     }
