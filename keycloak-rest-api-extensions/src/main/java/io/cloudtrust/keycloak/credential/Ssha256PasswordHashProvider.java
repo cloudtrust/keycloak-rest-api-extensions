@@ -1,6 +1,6 @@
 package io.cloudtrust.keycloak.credential;
 
-import org.apache.commons.lang.ArrayUtils;
+import com.google.common.primitives.Bytes;
 import org.keycloak.common.util.Base64;
 import org.keycloak.credential.hash.PasswordHashProvider;
 import org.keycloak.models.PasswordPolicy;
@@ -32,9 +32,9 @@ public class Ssha256PasswordHashProvider implements PasswordHashProvider {
         byte[] toEncode;
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(ArrayUtils.addAll(rawPassword.getBytes(), salt));
+            byte[] hash = digest.digest(Bytes.concat(rawPassword.getBytes(), salt));
 
-            toEncode = ArrayUtils.addAll(hash, salt);
+            toEncode = Bytes.concat(hash, salt);
             String value = SSHA256_PREFIX + Base64.encodeBytes(toEncode);
 
             return PasswordCredentialModel.createFromValues(Ssha256PasswordHashProviderFactory.ID, salt, 1, value);
@@ -57,9 +57,9 @@ public class Ssha256PasswordHashProvider implements PasswordHashProvider {
             // from the value
             byte[] salt = Arrays.copyOfRange(decodedValue, 32, decodedValue.length);
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(ArrayUtils.addAll(rawPassword.getBytes(), salt));
+            byte[] hash = digest.digest(Bytes.concat(rawPassword.getBytes(), salt));
 
-            byte[] result = ArrayUtils.addAll(hash, salt);
+            byte[] result = Bytes.concat(hash, salt);
             return Arrays.equals(result, decodedValue);
         } catch (IOException | NoSuchAlgorithmException e) {
             return false;

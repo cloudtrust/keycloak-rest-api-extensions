@@ -1,6 +1,6 @@
 package io.cloudtrust.keycloak.email.model;
 
-import io.cloudtrust.keycloak.delegate.RealmModelDelegate;
+import io.cloudtrust.keycloak.authentication.delegate.RealmModelDelegate;
 import org.keycloak.models.RealmModel;
 
 public class RealmWithOverridenEmailTheme extends RealmModelDelegate {
