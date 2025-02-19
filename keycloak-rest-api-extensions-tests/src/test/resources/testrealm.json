@@ -60,8 +60,7 @@
       "firstName": "Tom",
       "lastName": "Brady",
       "credentials" : [
-        { "type" : "password",
-          "value" : "password" }
+        { "type" : "password", "value" : "P@55w0rd!" }
       ],
       "realmRoles": ["user", "offline_access"],
       "clientRoles": {
@@ -76,8 +75,7 @@
       "firstName": "John",
       "lastName": "Doh",
       "credentials" : [
-        { "type" : "password",
-          "value" : "password" }
+        { "type" : "password", "value" : "P@55w0rd!" }
       ],
       "realmRoles": ["user"],
       "clientRoles": {
@@ -92,8 +90,7 @@
       "firstName": "Jane",
       "lastName": "Edoha",
       "credentials" : [
-        { "type" : "password",
-          "value" : "password" }
+        { "type" : "password", "value" : "P@55w0rd!" }
       ],
       "realmRoles": ["user"],
       "clientRoles": {
@@ -106,8 +103,7 @@
       "enabled": true,
       "email" : "top@redhat.com",
       "credentials" : [
-        { "type" : "password",
-          "value" : "password" }
+        { "type" : "password", "value" : "P@55w0rd!" }
       ],
       "realmRoles": ["offline_access"],
       "groups": [
@@ -119,8 +115,7 @@
       "enabled": true,
       "email" : "top2@redhat.com",
       "credentials" : [
-        { "type" : "password",
-          "value" : "password" }
+        { "type" : "password", "value" : "P@55w0rd!" }
       ],
       "realmRoles": ["user", "offline_access"],
       "groups": [
@@ -132,8 +127,7 @@
       "enabled": true,
       "email" : "level2@redhat.com",
       "credentials" : [
-        { "type" : "password",
-          "value" : "password" }
+        { "type" : "password", "value" : "P@55w0rd!" }
       ],
       "groups": [
         "/topGroup/level2group"
@@ -144,8 +138,7 @@
       "enabled": true,
       "email" : "rich.roles@redhat.com",
       "credentials" : [
-        { "type" : "password",
-          "value" : "password" }
+        { "type" : "password", "value" : "P@55w0rd!" }
       ],
       "groups": [
         "/roleRichGroup/level2group"
@@ -161,8 +154,7 @@
       "firstName": "Brian",
       "lastName": "Cohen",
       "credentials" : [
-        { "type" : "password",
-          "value" : "password" }
+        { "type" : "password", "value" : "P@55w0rd!" }
       ],
       "realmRoles": ["user", "offline_access"],
       "clientRoles": {
@@ -414,6 +406,48 @@
       "directAccessGrantsEnabled": true,
       "secret": "password",
       "webOrigins": [ "http://localtest.me:8180" ]
+    },
+    {
+      "clientId": "admin-cli",
+      "name": "${client_admin-cli}",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": [],
+      "webOrigins": [],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "publicClient": true,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "false",
+        "client.use.lightweight.access.token.enabled": "false"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": 0,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "organization",
+        "offline_access",
+        "microprofile-jwt"
+      ]
     }
   ],
   "roles" : {
@@ -566,8 +600,6 @@
       ]
     }
   ],
-
-
   "clientScopeMappings": {
     "test-app": [
       {
@@ -586,7 +618,6 @@
       }
     ]
   },
-
   "internationalizationEnabled": true,
   "supportedLocales": ["en", "de"],
   "defaultLocale": "en",

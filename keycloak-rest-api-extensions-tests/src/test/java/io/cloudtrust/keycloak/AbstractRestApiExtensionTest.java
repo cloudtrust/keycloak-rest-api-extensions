@@ -2,6 +2,7 @@ package io.cloudtrust.keycloak;
 
 import io.cloudtrust.keycloak.test.AbstractInKeycloakTest;
 import io.cloudtrust.keycloak.test.init.InjectionException;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -13,16 +14,17 @@ public abstract class AbstractRestApiExtensionTest extends AbstractInKeycloakTes
     @BeforeEach
     public void setupTest() throws IOException, InjectionException {
         this.injectComponents();
+        disableLightweightAccessToken("master", "admin-cli");
+
         this.createRealm("/testrealm.json");
-        this.api().initToken();
+        createDummyRealm("dummy1", "invalid-theme");
+        createDummyRealm("dummy2", "keycloak");
+
         // Clean events
         this.events().activate("test");
         this.events().clear();
         this.adminEvents().activate("test");
         this.adminEvents().clear();
-
-        createDummyRealm("dummy1", "invalid-theme");
-        createDummyRealm("dummy2", "keycloak");
     }
 
     @AfterEach

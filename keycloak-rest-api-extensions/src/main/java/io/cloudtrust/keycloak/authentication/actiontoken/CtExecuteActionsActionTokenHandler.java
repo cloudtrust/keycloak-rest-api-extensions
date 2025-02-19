@@ -26,9 +26,9 @@ import org.keycloak.services.messages.Messages;
 import org.keycloak.sessions.AuthenticationSessionCompoundId;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
 import java.util.Objects;
 
 /**
@@ -74,7 +74,7 @@ public class CtExecuteActionsActionTokenHandler extends AbstractActionTokenHandl
             String authSessionEncodedId = AuthenticationSessionCompoundId.fromAuthSession(authSession).getEncodedId();
             token.setCompoundAuthenticationSessionId(authSessionEncodedId);
             UriBuilder builder = Urls.actionTokenBuilder(uriInfo.getBaseUri(), token.serialize(session, realm, uriInfo),
-                    authSession.getClient().getClientId(), authSession.getTabId());
+                    authSession.getClient().getClientId(), authSession.getTabId(), null);
             String confirmUri = builder.build(realm.getName()).toString();
 
             return session.getProvider(LoginFormsProvider.class)
@@ -109,7 +109,7 @@ public class CtExecuteActionsActionTokenHandler extends AbstractActionTokenHandl
 
     private boolean setEmailVerified(UserModel user, CtExecuteActionsActionToken token) {
         boolean isCtVerifyEmail = token.getRequiredActions().contains(ExecuteActionsEmailHelper.VERIFY_EMAIL_ACTION);
-        String emailClaim = StringUtils.defaultString(token.getEmailToValidate(), user.getEmail());
+        String emailClaim = Objects.toString(token.getEmailToValidate(), user.getEmail());
         if (StringUtils.isBlank(emailClaim)) {
             return !isCtVerifyEmail;
         }
