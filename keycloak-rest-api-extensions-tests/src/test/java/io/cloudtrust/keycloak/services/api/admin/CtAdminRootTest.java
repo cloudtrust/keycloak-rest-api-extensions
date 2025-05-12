@@ -13,7 +13,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -21,10 +20,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 @ExtendWith(KeycloakDeploy.class)
-class AdminRootTest extends AbstractRestApiExtensionTest {
+class CtAdminRootTest extends AbstractRestApiExtensionTest {
     private static final TypeReference<List<DeletableUserRepresentation>> deletableUserListType = new TypeReference<List<DeletableUserRepresentation>>() {
     };
-    private static final TypeReference<List<EmailInfo>> emailInfoListType = new TypeReference<List<EmailInfo>>() {
+    private static final TypeReference<List<EmailInfo>> emailInfoListType = new TypeReference<>() {
     };
 
     @BeforeEach
@@ -43,8 +42,7 @@ class AdminRootTest extends AbstractRestApiExtensionTest {
 
     @Test
     void testGetSupportInformation() throws IOException, URISyntaxException {
-        List<NameValuePair> params = new ArrayList<NameValuePair>();
-        params.add(new BasicNameValuePair("email", "john-doh@LOCALHOST"));
+        List<NameValuePair> params = Collections.singletonList(new BasicNameValuePair("email", "john-doh@LOCALHOST"));
         List<EmailInfo> emailInfo = api().query(emailInfoListType, "GET", "/realms/master/api/admin/support-infos", params);
         assertThat(emailInfo.size(), is(1));
     }

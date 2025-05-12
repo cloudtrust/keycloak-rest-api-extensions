@@ -1,18 +1,31 @@
 package io.cloudtrust.keycloak.services.resource.api.admin;
 
 import io.cloudtrust.keycloak.ExecuteActionsEmailHelper;
-import io.cloudtrust.keycloak.delegate.CtUserModelDelegate;
+import io.cloudtrust.keycloak.authentication.delegate.CtUserModelDelegate;
 import io.cloudtrust.keycloak.email.EmailSender;
 import io.cloudtrust.keycloak.email.model.EmailModel;
 import io.cloudtrust.keycloak.email.model.RealmWithOverridenEmailTheme;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.annotations.cache.NoCache;
+import org.jboss.resteasy.reactive.NoCache;
 import org.keycloak.email.EmailException;
 import org.keycloak.email.freemarker.beans.ProfileBean;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.Constants;
+import org.keycloak.models.KeycloakContext;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
@@ -27,36 +40,26 @@ import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.services.resources.admin.UserResource;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-public class CtUserResource extends UserResource {
+public class CtUserResource {
     private static final Logger logger = Logger.getLogger(CtUserResource.class);
     private static final String USER_EMAIL_MISSING = "User email missing";
 
     protected static final String ATTRIB_NAME_ID = "saml.persistent.name.id.for.*";
 
+    private UserResource kcUserResource;
     private final AdminPermissionEvaluator auth;
     private final AdminEventBuilder adminEvent;
     private final KeycloakSession kcSession;
     private final UserModel user;
 
     public CtUserResource(KeycloakSession kcSession, UserModel user, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
-        super(kcSession.getContext().getRealm(), user, auth, adminEvent);
+        this.kcUserResource = new UserResource(kcSession, user, auth, adminEvent);
         this.auth = auth;
         this.adminEvent = adminEvent;
         this.kcSession = kcSession;
@@ -71,9 +74,8 @@ public class CtUserResource extends UserResource {
     @GET
     @NoCache
     @Produces(MediaType.APPLICATION_JSON)
-    @Override
-    public UserRepresentation getUser() {
-        UserRepresentation res = super.getUser();
+    public UserRepresentation getUser(@Parameter(description = "Indicates if the user profile metadata should be added to the response") @QueryParam("userProfileMetadata") boolean userProfileMetadata) {
+        UserRepresentation res = kcUserResource.getUser(userProfileMetadata);
         String nameId = this.user.getFirstAttribute(ATTRIB_NAME_ID);
         if (StringUtils.isNotBlank(nameId)) {
             res.getAttributes().put(ATTRIB_NAME_ID, Collections.singletonList(nameId));
@@ -91,29 +93,28 @@ public class CtUserResource extends UserResource {
             emailModel.setRecipient(user.getEmail());
         }
         if (StringUtils.isBlank(emailModel.getRecipient())) {
-            return ErrorResponse.error(USER_EMAIL_MISSING, Response.Status.BAD_REQUEST);
+            throw ErrorResponse.error(USER_EMAIL_MISSING, Response.Status.BAD_REQUEST);
         }
 
         if (!user.isEnabled()) {
             throw new WebApplicationException(ErrorResponse.error("User is disabled", Response.Status.BAD_REQUEST));
         }
 
-        if (emailModel.getTheming()!=null) {
-            Response error = setEmailTheme(emailModel.getTheming().getThemeRealmName());
-            if (error != null) {
-                return error;
-            }
+        if (emailModel.getTheming() != null) {
+            setEmailTheme(emailModel.getTheming().getThemeRealmName());
         }
 
-        Locale locale = session.getContext().resolveLocale(user);
+        KeycloakContext context = this.kcSession.getContext();
+        RealmModel realm = context.getRealm();
+        Locale locale = context.resolveLocale(user);
 
-        UriBuilder builder = LoginActionsService.loginActionsBaseUrl(session.getContext().getUri());
-        String link = builder.build(session.getContext().getRealm().getName()).toString() + "/";
+        UriBuilder builder = LoginActionsService.loginActionsBaseUrl(context.getUri());
+        String link = builder.build(realm.getName()).toString() + "/";
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put("user", new ProfileBean(user));
+        attributes.put("user", new ProfileBean(user, this.kcSession));
         attributes.put("realmName", realm.getDisplayName());
         attributes.put("link", link);
-        if (emailModel.getTheming()!=null && emailModel.getTheming().getTemplateParameters() != null) {
+        if (emailModel.getTheming() != null && emailModel.getTheming().getTemplateParameters() != null) {
             attributes.putAll(emailModel.getTheming().getTemplateParameters());
         }
 
@@ -156,7 +157,7 @@ public class CtUserResource extends UserResource {
         auth.users().requireManage(user);
 
         if (user.getEmail() == null) {
-            return ErrorResponse.error(USER_EMAIL_MISSING, Response.Status.BAD_REQUEST);
+            throw ErrorResponse.error(USER_EMAIL_MISSING, Response.Status.BAD_REQUEST);
         }
 
         validateUser(user);
@@ -179,34 +180,32 @@ public class CtUserResource extends UserResource {
             targetUser = new CtUserModelDelegate(user);
             targetUser.setEmail(emailToValidate);
         } else if (StringUtils.isBlank(user.getEmail())) {
-            return ErrorResponse.error(USER_EMAIL_MISSING, Response.Status.BAD_REQUEST);
+            throw ErrorResponse.error(USER_EMAIL_MISSING, Response.Status.BAD_REQUEST);
         }
 
         ClientModel client = getEnabledClientOrFail(clientId);
 
         String redirect;
         if (redirectUri != null) {
-            redirect = RedirectUtils.verifyRedirectUri(session, redirectUri, client);
+            redirect = RedirectUtils.verifyRedirectUri(this.kcSession, redirectUri, client);
             if (redirect == null) {
                 throw new WebApplicationException(ErrorResponse.error("Invalid redirect uri.", Response.Status.BAD_REQUEST));
             }
         }
 
-        Response error = setEmailTheme(themeRealmName);
-        if (error != null) {
-            return error;
-        }
+        setEmailTheme(themeRealmName);
 
+        RealmModel realm = this.kcSession.getContext().getRealm();
         try {
-            ExecuteActionsEmailHelper.sendExecuteActionsEmail(session, realm, targetUser, actions, lifespan, redirectUri, clientId, attributes);
-            adminEvent.operation(OperationType.ACTION).resourcePath(session.getContext().getUri()).success();
+            ExecuteActionsEmailHelper.sendExecuteActionsEmail(this.kcSession, realm, targetUser, actions, lifespan, redirectUri, clientId, attributes);
+            adminEvent.operation(OperationType.ACTION).resourcePath(this.kcSession.getContext().getUri()).success();
 
             return Response.noContent().build();
         } catch (EmailException e) {
             ServicesLogger.LOGGER.failedToSendActionsEmail(e);
-            return ErrorResponse.error("Failed to send execute actions email", Response.Status.INTERNAL_SERVER_ERROR);
+            throw ErrorResponse.error("Failed to send execute actions email", Response.Status.INTERNAL_SERVER_ERROR);
         } finally {
-            session.getContext().setRealm(realm);
+            this.kcSession.getContext().setRealm(realm);
         }
     }
 
@@ -223,6 +222,7 @@ public class CtUserResource extends UserResource {
     }
 
     private ClientModel getEnabledClientOrFail(String clientId) {
+        RealmModel realm = this.kcSession.getContext().getRealm();
         ClientModel client = realm.getClientByClientId(clientId);
         if (client == null) {
             logger.debugf("Client %s doesn't exist", clientId);
@@ -235,19 +235,18 @@ public class CtUserResource extends UserResource {
         return client;
     }
 
-    private Response setEmailTheme(String themeRealmName) {
+    private void setEmailTheme(String themeRealmName) {
         if (!StringUtils.isBlank(themeRealmName)) {
-            RealmManager realmManager = new RealmManager(session);
+            RealmManager realmManager = new RealmManager(this.kcSession);
             RealmModel themeRealm = realmManager.getRealmByName(themeRealmName);
             if (themeRealm == null) {
-                return ErrorResponse.error("Invalid realm name", Response.Status.BAD_REQUEST);
+                throw ErrorResponse.error("Invalid realm name", Response.Status.BAD_REQUEST);
             }
             if (themeRealm.getEmailTheme() != null) {
-                RealmWithOverridenEmailTheme overridenRealm = new RealmWithOverridenEmailTheme(realm);
+                RealmWithOverridenEmailTheme overridenRealm = new RealmWithOverridenEmailTheme(this.kcSession.getContext().getRealm());
                 overridenRealm.setEmailTheme(themeRealm.getEmailTheme());
-                session.getContext().setRealm(overridenRealm);
+                this.kcSession.getContext().setRealm(overridenRealm);
             }
         }
-        return null;
     }
 }

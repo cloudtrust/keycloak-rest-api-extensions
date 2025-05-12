@@ -5,7 +5,8 @@ import com.icegreen.greenmail.util.ServerSetupTest;
 import io.cloudtrust.keycloak.AbstractRestApiExtensionTest;
 import io.cloudtrust.keycloak.ExecuteActionsEmailHelper;
 import io.cloudtrust.keycloak.test.container.KeycloakDeploy;
-import org.apache.commons.io.IOUtils;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import org.apache.http.client.HttpResponseException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
@@ -13,10 +14,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import javax.mail.MessagingException;
-import javax.mail.internet.MimeMessage;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 
@@ -96,9 +94,6 @@ class CtUserResourceTest extends AbstractRestApiExtensionTest {
     }
 
     private String getMailContent(MimeMessage mail) throws IOException, MessagingException {
-        StringWriter writer = new StringWriter();
-        String encoding = StandardCharsets.UTF_8.name();
-        IOUtils.copy(mail.getInputStream(), writer, encoding);
-        return writer.toString();
+        return new String(mail.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
     }
 }

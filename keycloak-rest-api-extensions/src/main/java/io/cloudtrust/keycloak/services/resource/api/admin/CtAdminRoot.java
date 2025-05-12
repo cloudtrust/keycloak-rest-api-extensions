@@ -3,47 +3,53 @@ package io.cloudtrust.keycloak.services.resource.api.admin;
 import io.cloudtrust.keycloak.representations.idm.DeletableUserRepresentation;
 import io.cloudtrust.keycloak.services.resource.api.ApiConfig;
 import io.cloudtrust.keycloak.services.resource.api.model.EmailInfo;
+import jakarta.persistence.EntityManager;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
-import org.jboss.resteasy.spi.HttpRequest;
-import org.jboss.resteasy.spi.HttpResponse;
-import org.jboss.resteasy.spi.ResteasyProviderFactory;
+import org.keycloak.common.util.Encode;
 import org.keycloak.connections.jpa.JpaConnectionProvider;
+import org.keycloak.http.HttpRequest;
+import org.keycloak.jose.jws.JWSInput;
+import org.keycloak.jose.jws.JWSInputException;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.protocol.oidc.TokenManager;
+import org.keycloak.representations.AccessToken;
+import org.keycloak.services.cors.Cors;
+import org.keycloak.services.managers.AppAuthManager;
+import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.services.managers.RealmManager;
-import org.keycloak.services.resources.Cors;
 import org.keycloak.services.resources.admin.AdminAuth;
-import org.keycloak.services.resources.admin.AdminCorsPreflightService;
+import org.keycloak.services.resources.admin.RealmsAdminResourcePreflight;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 import org.keycloak.services.resources.admin.permissions.AdminPermissions;
 
-import javax.persistence.EntityManager;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.GET;
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
-public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
-
-    protected static final Logger logger = Logger.getLogger(AdminRoot.class);
+public class CtAdminRoot {
+    protected static final Logger logger = Logger.getLogger(CtAdminRoot.class);
     private static final String MSG_AUTH_ADMIN_ACCESS = "authenticated admin access for: {}";
 
+    private final KeycloakSession session;
     private final ApiConfig apiConfig;
+    private final TokenManager tokenManager;
 
-    public AdminRoot(KeycloakSession session, ApiConfig apiConfig) {
+    public CtAdminRoot(KeycloakSession session, ApiConfig apiConfig) {
         this.session = session;
         this.apiConfig = apiConfig;
+        this.tokenManager = new TokenManager();
     }
 
     /**
@@ -54,9 +60,10 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
      * @return administration resource
      */
     @Path("realms")
-    public Object getRealmsAdmin(@Context final HttpRequest request, @Context HttpResponse response) {
+    public CtRealmsAdminResource getRealmsAdmin() {
+        HttpRequest request = session.getContext().getHttpRequest();
         if (HttpMethod.OPTIONS.equals(request.getHttpMethod())) {
-            return new AdminCorsPreflightService(request);
+            new RealmsAdminResourcePreflight(session, null, tokenManager, request);
         }
 
         AdminAuth auth = authenticateRealmAdminRequest(request.getHttpHeaders());
@@ -65,11 +72,9 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
         }
 
         logger.debugf(MSG_AUTH_ADMIN_ACCESS, auth.getUser().getUsername());
-        Cors.add(request).allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().build(response);
+        Cors.builder().allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().add();
 
-        org.keycloak.services.resources.admin.RealmsAdminResource adminResource = new RealmsAdminResource(auth, tokenManager, session);
-        ResteasyProviderFactory.getInstance().injectProperties(adminResource);
-        return adminResource;
+        return new CtRealmsAdminResource(auth, session);
     }
 
     /**
@@ -81,14 +86,17 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
     @Path("expired-tou-acceptance")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public List<DeletableUserRepresentation> expiredTermsOfUseAcceptance(@Context final HttpRequest request, @Context HttpResponse response) {
+    public List<DeletableUserRepresentation> expiredTermsOfUseAcceptance() {
+        logger.warn("Executing expired-tou-acceptance");
+        HttpRequest request = this.session.getContext().getHttpRequest();
         AdminAuth auth = authenticateRealmAdminRequest(request.getHttpHeaders());
         if (auth == null) {
+            logger.warn("Executing expired-tou-acceptance ** REJECT NO-AUTH **");
             throw new NotAuthorizedException("Can't get AdminAuth");
         }
 
         logger.debugf(MSG_AUTH_ADMIN_ACCESS, auth.getUser().getUsername());
-        Cors.add(request).allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().build(response);
+        Cors.builder().allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().add();
 
         // Check rights
         RealmManager realmManager = new RealmManager(session);
@@ -107,7 +115,7 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
                 .setParameter("limit", limit)
                 .getResultList();
         logger.debugf("expiredTermsOfUseAcceptance> found %d rows", result.size());
-        return result.stream().map(this::createDeletableUser).collect(Collectors.toList());
+        return result.stream().map(this::createDeletableUser).toList();
     }
 
     private DeletableUserRepresentation createDeletableUser(Object[] userInfo) {
@@ -127,15 +135,17 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
      */
     @Path("support-infos")
     @GET
-    @Produces(javax.ws.rs.core.MediaType.APPLICATION_JSON)
-    public List<EmailInfo> getSupportInformation(@Context final HttpRequest request, @Context HttpResponse response, @QueryParam("email") String email) {
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<EmailInfo> getSupportInformation(@QueryParam("email") String email) {
+        logger.warn("Executing support-infos");
+        HttpRequest request = this.session.getContext().getHttpRequest();
         AdminAuth auth = authenticateRealmAdminRequest(request.getHttpHeaders());
         if (auth == null) {
             throw new NotAuthorizedException("unauthorized");
         }
 
         logger.debugf(MSG_AUTH_ADMIN_ACCESS, auth.getUser().getUsername());
-        Cors.add(request).allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().build(response);
+        Cors.builder().allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().add();
 
         // Check rights
         RealmManager realmManager = new RealmManager(session);
@@ -158,7 +168,7 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
         if (result.isEmpty()) {
             throw new NotFoundException("email");
         }
-        return result.stream().map(this::createEmailInfo).collect(Collectors.toList());
+        return result.stream().map(this::createEmailInfo).toList();
     }
 
     private EmailInfo createEmailInfo(Object[] row) {
@@ -169,5 +179,40 @@ public class AdminRoot extends org.keycloak.services.resources.admin.AdminRoot {
             res.setCreationDate(creationDate.longValue());
         }
         return res;
+    }
+
+    /*
+     * Copied/pasted from org.keycloak.services.resources.admin.AdminRoot
+     */
+    protected AdminAuth authenticateRealmAdminRequest(HttpHeaders headers) {
+        String tokenString = AppAuthManager.extractAuthorizationHeaderToken(headers);
+        if (tokenString == null) throw new NotAuthorizedException("Bearer");
+        AccessToken token;
+        try {
+            JWSInput input = new JWSInput(tokenString);
+            token = input.readJsonContent(AccessToken.class);
+        } catch (JWSInputException e) {
+            throw new NotAuthorizedException("Bearer token format error");
+        }
+        String realmName = Encode.decodePath(token.getIssuer().substring(token.getIssuer().lastIndexOf('/') + 1));
+        RealmManager realmManager = new RealmManager(session);
+        RealmModel realm = realmManager.getRealmByName(realmName);
+        if (realm == null) {
+            throw new NotAuthorizedException("Unknown realm in token");
+        }
+        session.getContext().setRealm(realm);
+
+        AuthenticationManager.AuthResult authResult = new AppAuthManager.BearerTokenAuthenticator(session)
+                .setRealm(realm)
+                .setConnection(session.getContext().getConnection())
+                .setHeaders(headers)
+                .authenticate();
+
+        if (authResult == null) {
+            logger.debug("Token not valid");
+            throw new NotAuthorizedException("Bearer");
+        }
+
+        return new AdminAuth(realm, authResult.getToken(), authResult.getUser(), authResult.getClient());
     }
 }

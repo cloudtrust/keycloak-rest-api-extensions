@@ -1,13 +1,27 @@
 package io.cloudtrust.keycloak.email.provider;
 
-import com.sun.mail.smtp.SMTPMessage;
 import io.cloudtrust.keycloak.email.model.AttachmentModel;
 import io.cloudtrust.keycloak.email.model.BasicMessageModel;
 import io.cloudtrust.keycloak.email.model.EmailModel;
 import io.cloudtrust.keycloak.email.model.ThemingModel;
-
+import jakarta.activation.DataHandler;
+import jakarta.activation.DataSource;
+import jakarta.mail.Address;
+import jakarta.mail.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.Multipart;
+import jakarta.mail.Part;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
+import jakarta.mail.util.ByteArrayDataSource;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
+import org.keycloak.common.enums.HostnameVerificationPolicy;
 import org.keycloak.email.EmailException;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.services.ServicesLogger;
@@ -15,24 +29,9 @@ import org.keycloak.theme.FreeMarkerException;
 import org.keycloak.theme.Theme;
 import org.keycloak.theme.beans.MessageFormatterMethod;
 import org.keycloak.theme.freemarker.FreeMarkerProvider;
-import org.keycloak.truststore.HostnameVerificationPolicy;
 import org.keycloak.truststore.JSSETruststoreConfigurator;
 import org.keycloak.vault.VaultStringSecret;
 
-import javax.activation.DataHandler;
-import javax.activation.DataSource;
-import javax.mail.Address;
-import javax.mail.MessagingException;
-import javax.mail.Multipart;
-import javax.mail.Part;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-import javax.mail.util.ByteArrayDataSource;
 import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -118,7 +117,7 @@ public class FreeMarkerEmailAttachmentsSenderProvider {
         try {
             return freeMarker.processTemplate(attributes, templateRef, theme);
         } catch (final FreeMarkerException e) {
-            logger.error("Failed to load template "+templateRef, e);
+            logger.error("Failed to load template " + templateRef, e);
             return null;
         }
     }
@@ -188,7 +187,7 @@ public class FreeMarkerEmailAttachmentsSenderProvider {
             }
         } catch (Exception e) {
             ServicesLogger.LOGGER.failedToSendEmail(e);
-            throw new EmailException(e);
+            throw new EmailException("Email sending failed", e);
         }
     }
 
@@ -199,18 +198,19 @@ public class FreeMarkerEmailAttachmentsSenderProvider {
         String replyToDisplayName = config.get("replyToDisplayName");
         String envelopeFrom = config.get("envelopeFrom");
 
-        SMTPMessage msg = new SMTPMessage(smtpSession);
+        MimeMessage msg = new MimeMessage(smtpSession);
         msg.setFrom(toInternetAddress(from, fromDisplayName));
 
-        msg.setReplyTo(new Address[]{toInternetAddress(from, fromDisplayName)});
         if (replyTo != null && !replyTo.isEmpty()) {
             msg.setReplyTo(new Address[]{toInternetAddress(replyTo, replyToDisplayName)});
+        } else {
+            msg.setReplyTo(new Address[]{toInternetAddress(from, fromDisplayName)});
         }
         if (envelopeFrom != null && !envelopeFrom.isEmpty()) {
-            msg.setEnvelopeFrom(envelopeFrom);
+            msg.setHeader("mail.smtp.from", envelopeFrom); // Custom header, requires SMTP configuration in transport
         }
 
-        msg.setHeader("To", address);
+        msg.addRecipient(Message.RecipientType.TO, new InternetAddress(address));
         msg.setSubject(subject, "utf-8");
 
         return msg;

@@ -5,19 +5,17 @@
     <parent>
         <groupId>io.cloudtrust</groupId>
         <artifactId>kc-cloudtrust-testsuite</artifactId>
-        <version>20.0.4</version>
+        <version>26.0.0</version>
         <relativePath />
     </parent>
 
     <artifactId>keycloak-rest-api-extensions-tests</artifactId>
-    <version>20.1.4-SNAPSHOT</version>
+    <version>26.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <version.pmd.plugin>3.12.0</version.pmd.plugin>
-
-        <guava.version>31.0.1-jre</guava.version>
     </properties>
 
     <dependencies>
@@ -33,7 +31,6 @@
         <dependency>
             <groupId>io.cloudtrust</groupId>
             <artifactId>cloudtrust-test-tools</artifactId>
-            <version>4.0.4</version>
         </dependency>
     </dependencies>
 

@@ -1,18 +1,16 @@
 package io.cloudtrust.keycloak.services.resource.api;
 
-import io.cloudtrust.keycloak.services.resource.api.account.AccountLoader;
-import io.cloudtrust.keycloak.services.resource.api.admin.AdminRoot;
+import io.cloudtrust.keycloak.services.resource.api.account.CtAccountLoader;
+import io.cloudtrust.keycloak.services.resource.api.admin.CtAdminRoot;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import org.keycloak.events.EventBuilder;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.services.managers.RealmManager;
 
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-
 public class ApiRoot {
-
     private final KeycloakSession session;
     private final ApiConfig apiConfig;
 
@@ -26,7 +24,7 @@ public class ApiRoot {
      */
     @Path("admin")
     public Object getAdminApiRoot() {
-        return new AdminRoot(session, apiConfig);
+        return new CtAdminRoot(session, apiConfig);
     }
 
 
@@ -34,7 +32,7 @@ public class ApiRoot {
     public Object getAccountApiRoot(final @PathParam("realm") String name) {
         RealmModel realm = init(name);
         EventBuilder event = new EventBuilder(realm, session, session.getContext().getConnection());
-        return new AccountLoader(session, event).getAccountService();
+        return new CtAccountLoader(session, event).getAccountService();
     }
 
     private RealmModel init(String realmName) {

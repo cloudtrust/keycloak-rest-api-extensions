@@ -17,11 +17,15 @@ public class CtPasswordCreatedEventMatcher extends BaseMatcher<EventRepresentati
     public boolean matches(Object item) {
         if (item instanceof EventRepresentation event) {
             return event.getType().equals(EventType.CUSTOM_REQUIRED_ACTION.toString()) &&
-                    event.getDetails().get(Events.CT_EVENT_TYPE).equals(EventType.UPDATE_PASSWORD.toString()) &&
+                    isResetPassword(event.getDetails().get(Events.CT_EVENT_TYPE)) &&
                     event.getDetails().containsKey("credentialId") &&
                     StringUtils.isEmpty(event.getError());
         }
         return false;
+    }
+
+    private boolean isResetPassword(String detail) {
+        return detail.equals(EventType.RESET_PASSWORD.toString());
     }
 
     @Override

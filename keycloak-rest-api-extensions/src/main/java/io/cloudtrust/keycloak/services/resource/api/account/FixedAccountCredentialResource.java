@@ -1,6 +1,17 @@
 package io.cloudtrust.keycloak.services.resource.api.account;
 
-import org.jboss.resteasy.annotations.cache.NoCache;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Response;
+import org.jboss.resteasy.reactive.NoCache;
 import org.keycloak.authentication.CredentialRegistrator;
 import org.keycloak.authentication.RequiredActionProvider;
 import org.keycloak.credential.CredentialModel;
@@ -16,62 +27,56 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.RequiredActionProviderModel;
 import org.keycloak.models.UserCredentialModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.models.credential.PasswordCredentialModel;
 import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.managers.Auth;
 import org.keycloak.services.messages.Messages;
+import org.keycloak.services.resources.account.AccountCredentialResource;
 import org.keycloak.utils.MediaType;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Response;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 
 /**
  * Copy of {@link org.keycloak.services.resources.account.AccountCredentialResource} with additional resources
  */
 public class FixedAccountCredentialResource {
-
     private final KeycloakSession session;
     private final EventBuilder event;
     private final UserModel user;
-    private final RealmModel realm;
     private Auth auth;
 
-    public FixedAccountCredentialResource(KeycloakSession session, EventBuilder event, UserModel user, Auth auth) {
+    public FixedAccountCredentialResource(KeycloakSession session, UserModel user, Auth auth, EventBuilder event) {
         this.session = session;
         this.event = event;
         this.user = user;
         this.auth = auth;
-        realm = session.getContext().getRealm();
     }
 
     @GET
     @NoCache
-    @Produces(javax.ws.rs.core.MediaType.APPLICATION_JSON)
-    public List<CredentialRepresentation> credentials() {
+    @Produces(jakarta.ws.rs.core.MediaType.APPLICATION_JSON)
+    public List<CredentialRepresentation> credentials(@QueryParam(AccountCredentialResource.TYPE) String type,
+                                                      @QueryParam(AccountCredentialResource.USER_CREDENTIALS) Boolean userCredentials) {
         auth.requireOneOf(AccountRoles.MANAGE_ACCOUNT, AccountRoles.VIEW_PROFILE);
-        return user.credentialManager().getStoredCredentialsStream().map(c -> {
-            c.setSecretData(null);
-            return ModelToRepresentation.toRepresentation(c);
-        }).collect(Collectors.toList());
+        var kcResource = new AccountCredentialResource(session, user, auth, event);
+        return kcResource.credentialTypes(type, userCredentials)
+                .flatMap(cc -> cc.getUserCredentialMetadatas().stream())
+                .map(cc -> {
+                    var res = cc.getCredential();
+                    res.setSecretData(null);
+                    return res;
+                })
+                .toList();
     }
-
 
     @GET
     @Path("registrators")
     @NoCache
-    @Produces(javax.ws.rs.core.MediaType.APPLICATION_JSON)
+    @Produces(jakarta.ws.rs.core.MediaType.APPLICATION_JSON)
     public List<String> getCredentialRegistrators() {
         auth.requireOneOf(AccountRoles.MANAGE_ACCOUNT, AccountRoles.VIEW_PROFILE);
 
@@ -79,7 +84,7 @@ public class FixedAccountCredentialResource {
                 .filter(RequiredActionProviderModel::isEnabled)
                 .map(RequiredActionProviderModel::getProviderId)
                 .filter(providerId -> session.getProvider(RequiredActionProvider.class, providerId) instanceof CredentialRegistrator)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -88,32 +93,30 @@ public class FixedAccountCredentialResource {
     @Path("{credentialId}")
     @DELETE
     @NoCache
-    public Response removeCredential(final @PathParam("credentialId") String credentialId) {
+    public void removeCredential(final @PathParam("credentialId") String credentialId) {
         auth.require(AccountRoles.MANAGE_ACCOUNT);
 
         if (credentialNotOwnedByUser(user, credentialId)) {
-            return Response.status(NOT_FOUND).build();
+            throw new NotFoundException("Credential not found");
         }
 
         user.credentialManager().removeStoredCredentialById(credentialId);
-        return Response.noContent().build();
     }
 
     /**
      * Update a credential label for a user
      */
     @PUT
-    @Consumes(javax.ws.rs.core.MediaType.TEXT_PLAIN)
+    @Consumes(jakarta.ws.rs.core.MediaType.TEXT_PLAIN)
     @Path("{credentialId}/label")
-    public Response setLabel(final @PathParam("credentialId") String credentialId, String userLabel) {
+    public void setLabel(final @PathParam("credentialId") String credentialId, String userLabel) {
         auth.require(AccountRoles.MANAGE_ACCOUNT);
 
         if (credentialNotOwnedByUser(user, credentialId)) {
-            return Response.status(NOT_FOUND).build();
+            throw new NotFoundException("Credential not found");
         }
 
         user.credentialManager().updateCredentialLabel(credentialId, userLabel);
-        return Response.noContent().build();
     }
 
     /**
@@ -156,6 +159,7 @@ public class FixedAccountCredentialResource {
     public PasswordDetails passwordDetails() {
         auth.requireOneOf(AccountRoles.MANAGE_ACCOUNT, AccountRoles.VIEW_PROFILE);
 
+        RealmModel realm = session.getContext().getRealm();
         PasswordCredentialProvider passwordProvider = (PasswordCredentialProvider) session.getProvider(CredentialProvider.class, PasswordCredentialProviderFactory.PROVIDER_ID);
         CredentialModel password = passwordProvider.getPassword(realm, user);
 
@@ -176,27 +180,27 @@ public class FixedAccountCredentialResource {
     public Response passwordUpdate(PasswordUpdate update) {
         auth.require(AccountRoles.MANAGE_ACCOUNT);
 
-        event.event(EventType.UPDATE_PASSWORD);
+        event.event(EventType.RESET_PASSWORD);
 
-        UserCredentialModel cred = UserCredentialModel.password(update.getCurrentPassword());
+        UserCredentialModel cred = new UserCredentialModel("", PasswordCredentialModel.TYPE, update.getCurrentPassword(), false);
         if (!user.credentialManager().isValid(cred)) {
             event.error(org.keycloak.events.Errors.INVALID_USER_CREDENTIALS);
-            return ErrorResponse.error(Messages.INVALID_PASSWORD_EXISTING, Response.Status.BAD_REQUEST);
+            throw ErrorResponse.error(Messages.INVALID_PASSWORD_EXISTING, Response.Status.BAD_REQUEST);
         }
 
         if (update.getNewPassword() == null) {
-            return ErrorResponse.error(Messages.INVALID_PASSWORD_EXISTING, Response.Status.BAD_REQUEST);
+            throw ErrorResponse.error(Messages.INVALID_PASSWORD_EXISTING, Response.Status.BAD_REQUEST);
         }
 
         String confirmation = update.getConfirmation();
         if ((confirmation != null) && !update.getNewPassword().equals(confirmation)) {
-            return ErrorResponse.error(Messages.NOTMATCH_PASSWORD, Response.Status.BAD_REQUEST);
+            throw ErrorResponse.error(Messages.NOTMATCH_PASSWORD, Response.Status.BAD_REQUEST);
         }
 
         try {
             user.credentialManager().updateCredential(UserCredentialModel.password(update.getNewPassword(), false));
         } catch (ModelException e) {
-            return ErrorResponse.error(e.getMessage(), e.getParameters(), Response.Status.BAD_REQUEST);
+            throw ErrorResponse.error(e.getMessage(), e.getParameters(), Response.Status.BAD_REQUEST);
         }
 
         return Response.noContent().build();

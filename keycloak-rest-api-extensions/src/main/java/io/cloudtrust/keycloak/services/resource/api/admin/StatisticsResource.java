@@ -2,18 +2,18 @@ package io.cloudtrust.keycloak.services.resource.api.admin;
 
 import io.cloudtrust.keycloak.representations.idm.CredentialsStatisticsRepresentation;
 import io.cloudtrust.keycloak.representations.idm.UsersStatisticsRepresentation;
-import org.jboss.resteasy.annotations.cache.NoCache;
+import jakarta.persistence.EntityManager;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import org.jboss.resteasy.reactive.NoCache;
 import org.keycloak.connections.jpa.JpaConnectionProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.credential.PasswordCredentialModel;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 
-import javax.persistence.EntityManager;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 import java.math.BigInteger;
 import java.util.List;
 
