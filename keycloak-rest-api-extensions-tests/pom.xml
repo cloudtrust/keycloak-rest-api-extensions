@@ -27,6 +27,7 @@
         <dependency>
             <groupId>io.cloudtrust</groupId>
             <artifactId>kc-cloudtrust-test-tools</artifactId>
+            <version>26.0.0</version> <!-- TODO: Try to update cloudtrust-parent so that we don't have to specify the version here -->
         </dependency>
         <dependency>
             <groupId>io.cloudtrust</groupId>
