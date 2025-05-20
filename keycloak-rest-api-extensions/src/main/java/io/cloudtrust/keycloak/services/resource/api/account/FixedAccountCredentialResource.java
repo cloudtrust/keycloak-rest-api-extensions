@@ -9,7 +9,6 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.NoCache;
 import org.keycloak.authentication.CredentialRegistrator;
@@ -33,10 +32,10 @@ import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.managers.Auth;
 import org.keycloak.services.messages.Messages;
-import org.keycloak.services.resources.account.AccountCredentialResource;
 import org.keycloak.utils.MediaType;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 
@@ -59,18 +58,12 @@ public class FixedAccountCredentialResource {
     @GET
     @NoCache
     @Produces(jakarta.ws.rs.core.MediaType.APPLICATION_JSON)
-    public List<CredentialRepresentation> credentials(@QueryParam(AccountCredentialResource.TYPE) String type,
-                                                      @QueryParam(AccountCredentialResource.USER_CREDENTIALS) Boolean userCredentials) {
+    public List<CredentialRepresentation> credentials() {
         auth.requireOneOf(AccountRoles.MANAGE_ACCOUNT, AccountRoles.VIEW_PROFILE);
-        var kcResource = new AccountCredentialResource(session, user, auth, event);
-        return kcResource.credentialTypes(type, userCredentials)
-                .flatMap(cc -> cc.getUserCredentialMetadatas().stream())
-                .map(cc -> {
-                    var res = cc.getCredential();
-                    res.setSecretData(null);
-                    return res;
-                })
-                .toList();
+        return user.credentialManager().getStoredCredentialsStream().map(c -> {
+            c.setSecretData(null);
+            return ModelToRepresentation.toRepresentation(c);
+        }).collect(Collectors.toList());
     }
 
     @GET
