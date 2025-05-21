@@ -72,12 +72,12 @@ public class StatisticsResource {
 
     @SuppressWarnings("unchecked")
     private long getActiveUsersCount(EntityManager em) {
-        List<BigInteger> result = em.createNativeQuery(QUERY_ACTIVE_USERS_COUNT)
+        List<Long> result = em.createNativeQuery(QUERY_ACTIVE_USERS_COUNT)
                 .setParameter(PARAM_REALM, realm.getId())
                 .setParameter("credType1", NOT_AUTHENTICATORS[0])
                 .setParameter("credType2", NOT_AUTHENTICATORS[1])
                 .getResultList();
-        return result.isEmpty() ? 0 : result.get(0).longValue();
+        return result.isEmpty() ? 0 : result.get(0);
     }
 
     @Path("credentials")
