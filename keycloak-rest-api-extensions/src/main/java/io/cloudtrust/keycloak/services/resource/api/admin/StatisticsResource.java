@@ -2,6 +2,7 @@ package io.cloudtrust.keycloak.services.resource.api.admin;
 
 import io.cloudtrust.keycloak.representations.idm.CredentialsStatisticsRepresentation;
 import io.cloudtrust.keycloak.representations.idm.UsersStatisticsRepresentation;
+import io.cloudtrust.keycloak.services.resource.JpaResultCaster;
 import jakarta.persistence.EntityManager;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -14,7 +15,6 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.credential.PasswordCredentialModel;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 
-import java.math.BigInteger;
 import java.util.List;
 
 public class StatisticsResource {
@@ -55,9 +55,9 @@ public class StatisticsResource {
                 .setParameter(PARAM_REALM, realm.getId()).getResultList();
         for (Object[] row : result) {
             if (Boolean.TRUE.equals(row[0])) {
-                enabledUsersCount += (Long) row[1];
+                enabledUsersCount += JpaResultCaster.toLong(row[1]);
             } else {
-                disabledUsersCount += (Long) row[1];
+                disabledUsersCount += JpaResultCaster.toLong(row[1]);
             }
         }
 
@@ -92,7 +92,7 @@ public class StatisticsResource {
         CredentialsStatisticsRepresentation asr = new CredentialsStatisticsRepresentation();
         List<Object[]> result = em.createQuery("select c.type, count(*) from UserEntity u join u.credentials c where u.realmId=:realmId group by c.type")
                 .setParameter(PARAM_REALM, realm.getId()).getResultList();
-        result.forEach(row -> asr.put((String) row[0], (Long) row[1]));
+        result.forEach(row -> asr.put(JpaResultCaster.toString(row[0]), JpaResultCaster.toLong(row[1])));
 
         return asr;
     }
