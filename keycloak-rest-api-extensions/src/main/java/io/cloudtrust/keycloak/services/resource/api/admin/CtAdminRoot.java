@@ -1,6 +1,7 @@
 package io.cloudtrust.keycloak.services.resource.api.admin;
 
 import io.cloudtrust.keycloak.representations.idm.DeletableUserRepresentation;
+import io.cloudtrust.keycloak.services.resource.JpaResultCaster;
 import io.cloudtrust.keycloak.services.resource.api.ApiConfig;
 import io.cloudtrust.keycloak.services.resource.api.model.EmailInfo;
 import jakarta.persistence.EntityManager;
@@ -173,11 +174,8 @@ public class CtAdminRoot {
 
     private EmailInfo createEmailInfo(Object[] row) {
         EmailInfo res = new EmailInfo();
-        res.setRealm((String) row[0]);
-        BigInteger creationDate = (BigInteger) row[1];
-        if (creationDate != null) {
-            res.setCreationDate(creationDate.longValue());
-        }
+        res.setRealm(JpaResultCaster.toString(row[0]));
+        res.setCreationDate(JpaResultCaster.toLong(row[1]));
         return res;
     }
 
