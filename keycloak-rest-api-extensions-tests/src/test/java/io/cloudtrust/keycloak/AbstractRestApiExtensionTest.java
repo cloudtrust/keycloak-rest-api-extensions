@@ -1,43 +1,55 @@
 package io.cloudtrust.keycloak;
 
-import io.cloudtrust.keycloak.test.AbstractInKeycloakTest;
-import io.cloudtrust.keycloak.test.init.InjectionException;
-import org.junit.jupiter.api.AfterEach;
+import io.cloudtrust.keycloak.config.TestRealmConfig;
+import io.cloudtrust.keycloak.test.AbstractKeycloakTest;
+import io.cloudtrust.keycloak.test.ExtensionApi;
 import org.junit.jupiter.api.BeforeEach;
-import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.testframework.annotations.InjectAdminClient;
+import org.keycloak.testframework.annotations.InjectAdminEvents;
+import org.keycloak.testframework.annotations.InjectEvents;
+import org.keycloak.testframework.annotations.InjectRealm;
+import org.keycloak.testframework.events.AdminEvents;
+import org.keycloak.testframework.events.Events;
+import org.keycloak.testframework.realm.ManagedRealm;
 
-import java.io.IOException;
-import java.util.stream.Stream;
+public abstract class AbstractRestApiExtensionTest extends AbstractKeycloakTest {
 
-public abstract class AbstractRestApiExtensionTest extends AbstractInKeycloakTest {
+    @InjectAdminClient
+    public Keycloak keycloak;
+
+    @InjectRealm(config = TestRealmConfig.class, ref = "test")
+    public ManagedRealm testRealm;
+
+    @InjectRealm(ref = "dummy1")
+    public ManagedRealm dummyRealm1;
+
+    @InjectRealm(ref = "dummy2")
+    public ManagedRealm dummyRealm2;
+
+    @InjectEvents(realmRef = "test")
+    public Events events;
+
+    @InjectAdminEvents(realmRef = "test")
+    public AdminEvents adminEvents;
+
+    public ExtensionApi api() {
+        String baseUrl = testRealm.getBaseUrl();
+        baseUrl = baseUrl.substring(0, baseUrl.indexOf("/realms/"));
+        return new ExtensionApi(baseUrl, () -> keycloak.tokenManager().getAccessTokenString());
+    }
+
     @BeforeEach
-    public void setupTest() throws IOException, InjectionException {
-        this.injectComponents();
-        disableLightweightAccessToken("master", "admin-cli");
+    public void setupTest() {
+        dummyRealm1.getCreatedRepresentation().setEmailTheme("invalid-theme");
+        dummyRealm1.getCreatedRepresentation().setId("dummy1");
 
-        this.createRealm("/testrealm.json");
-        createDummyRealm("dummy1", "invalid-theme");
-        createDummyRealm("dummy2", "keycloak");
+        dummyRealm2.getCreatedRepresentation().setEmailTheme("keycloak");
+        dummyRealm2.getCreatedRepresentation().setId("dummy2");
 
         // Clean events
-        this.events().activate("test");
-        this.events().clear();
-        this.adminEvents().activate("test");
-        this.adminEvents().clear();
+        events.clear();
+        adminEvents.clear();
     }
 
-    @AfterEach
-    public void deleteDummyRealms() {
-        Stream.of("dummy1", "dummy2").forEach(this::deleteRealm);
-    }
-
-    private void createDummyRealm(String realm, String theme) {
-        this.deleteRealm(realm);
-        RealmRepresentation realmRepresentation = new RealmRepresentation();
-        realmRepresentation.setId(realm);
-        realmRepresentation.setRealm(realm);
-        realmRepresentation.setEnabled(true);
-        realmRepresentation.setEmailTheme(theme);
-        this.getKeycloakAdminClient().realms().create(realmRepresentation);
-    }
 }

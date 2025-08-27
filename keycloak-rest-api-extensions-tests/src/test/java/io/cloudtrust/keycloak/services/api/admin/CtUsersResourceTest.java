@@ -1,19 +1,8 @@
 package io.cloudtrust.keycloak.services.api.admin;
 
 import io.cloudtrust.keycloak.AbstractRestApiExtensionTest;
+import io.cloudtrust.keycloak.config.ServerConfig;
 import io.cloudtrust.keycloak.representations.idm.UsersPageRepresentation;
-import io.cloudtrust.keycloak.test.container.KeycloakDeploy;
-import org.apache.http.NameValuePair;
-import org.apache.http.message.BasicNameValuePair;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.keycloak.admin.client.resource.RealmResource;
-import org.keycloak.representations.idm.GroupRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
-
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -21,6 +10,15 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicNameValuePair;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.keycloak.representations.idm.GroupRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.testframework.annotations.KeycloakIntegrationTest;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
@@ -29,16 +27,16 @@ import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
-@ExtendWith(KeycloakDeploy.class)
+@KeycloakIntegrationTest(config = ServerConfig.class)
 class CtUsersResourceTest extends AbstractRestApiExtensionTest {
     private static final String getMethod = "GET";
 
     private String findRoleId(String name) {
-        return this.getRealm("test").roles().get(name).toRepresentation().getId();
+        return testRealm.admin().roles().get(name).toRepresentation().getId();
     }
 
     private String findGroupId(String name) {
-        return this.getRealm("test").groups().groups(name, null, null).get(0).getId();
+        return testRealm.admin().groups().groups(name, null, null).getFirst().getId();
     }
 
     @Test
@@ -114,7 +112,6 @@ class CtUsersResourceTest extends AbstractRestApiExtensionTest {
 
     @Test
     void testGetUsersWithGroup() throws IOException, URISyntaxException {
-        RealmResource testRealm = this.getRealm();
 
         List<NameValuePair> nvps = Collections.singletonList(new BasicNameValuePair("groupId", findGroupId("topGroup")));
         UsersPageRepresentation page = this.api().query(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
@@ -127,7 +124,7 @@ class CtUsersResourceTest extends AbstractRestApiExtensionTest {
         nvps = new ArrayList<>();
         // With KC18, subgroups are not filled in the group when searching with groups().group(...) so we search the group and get it again by its id
         String roleRichGroupId = findGroupId("roleRichGroup");
-        GroupRepresentation subGroup = testRealm.groups().group(roleRichGroupId).getSubGroups("level2group", true, 0, 100, false).get(0);
+        GroupRepresentation subGroup = testRealm.admin().groups().group(roleRichGroupId).getSubGroups("level2group", true, 0, 100, false).get(0);
         nvps.add(new BasicNameValuePair("groupId", subGroup.getId()));
         page = this.api().query(UsersPageRepresentation.class, getMethod, "/realms/master/api/admin/realms/test/users", nvps);
         users = grabUsers(page);
@@ -231,6 +228,6 @@ class CtUsersResourceTest extends AbstractRestApiExtensionTest {
     }
 
     private UserRepresentation[] grabUsers(UsersPageRepresentation page) {
-        return page.getUsers().toArray(n -> new UserRepresentation[n]);
+        return page.getUsers().toArray(UserRepresentation[]::new);
     }
 }
