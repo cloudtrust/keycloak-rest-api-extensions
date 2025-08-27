@@ -33,6 +33,21 @@
             <groupId>io.cloudtrust</groupId>
             <artifactId>cloudtrust-test-tools</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.keycloak.testframework</groupId>
+            <artifactId>keycloak-test-framework-core</artifactId>
+            <version>${keycloak.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.keycloak.testframework</groupId>
+            <artifactId>keycloak-test-framework-ui</artifactId>
+            <version>${keycloak.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.keycloak.testframework</groupId>
+            <artifactId>keycloak-test-framework-oauth</artifactId>
+            <version>${keycloak.version}</version>
+        </dependency>
     </dependencies>
 
     <repositories>
@@ -63,6 +78,11 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <kc.spi.realm.restapi.extension.api.terms.of.use.acceptance.delay.days>60</kc.spi.realm.restapi.extension.api.terms.of.use.acceptance.delay.days>
+                    </systemPropertyVariables>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-install-plugin</artifactId>

@@ -16,8 +16,8 @@ public class CtPasswordCreatedAdminEventMatcher extends BaseMatcher<AdminEventRe
     @Override
     public boolean matches(Object item) {
         if (item instanceof AdminEventRepresentation event) {
-            return event.getOperationType().equals(OperationType.CREATE.toString()) &&
-                    event.getResourceType().equals(ResourceType.CUSTOM.toString()) &&
+            return event.getOperationType().equals(OperationType.ACTION.toString()) &&
+                    event.getResourceType().equals(ResourceType.USER.toString()) &&
                     StringUtils.isEmpty(event.getError());
         }
         return false;
