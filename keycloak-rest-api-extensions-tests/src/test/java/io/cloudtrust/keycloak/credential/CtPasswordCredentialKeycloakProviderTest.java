@@ -7,13 +7,11 @@ import io.cloudtrust.keycloak.test.ExtensionApi;
 import io.cloudtrust.keycloak.test.util.OidcTokenProvider;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.time.Duration;
 import java.util.Map;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.idm.AdminEventRepresentation;
-import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.testframework.annotations.InjectAdminClient;
 import org.keycloak.testframework.annotations.InjectAdminEvents;
@@ -24,7 +22,6 @@ import org.keycloak.testframework.realm.ManagedRealm;
 import org.slf4j.LoggerFactory;
 
 import static io.cloudtrust.keycloak.credential.CtPasswordCreatedAdminEventMatcher.isPasswordCreatedAdminEvent;
-import static io.cloudtrust.keycloak.credential.CtPasswordCreatedEventMatcher.isPasswordCreatedEvent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -64,7 +61,7 @@ class CtPasswordCredentialKeycloakProviderTest extends AbstractKeycloakTest {
     public OidcTokenProvider createOidcTokenProviderTest(ManagedRealm realm, String username, String password) {
         log.info("base url {}", realm.getBaseUrl());
         log.info("realm name {}", realm.getName());
-        return new OidcTokenProvider(realm.getBaseUrl(),  "/protocol/openid-connect/token", username, password);
+        return new OidcTokenProvider(realm.getBaseUrl(), "/protocol/openid-connect/token", username, password);
 
         // http://localhost:8080/realms/test/protocol/openid-connect/token
     }
@@ -97,8 +94,10 @@ class CtPasswordCredentialKeycloakProviderTest extends AbstractKeycloakTest {
                     c.setDirectAccessGrantsEnabled(Boolean.TRUE);
                 });
 
-        log.info("sleep");
-        sleep(Duration.ofMinutes(3));
+//        for testing purposes
+//        log.info("sleep");
+//        sleep(Duration.ofMinutes(3));
+
         OidcTokenProvider tokenProvider = createOidcTokenProvider(testRealm, clientId, "");
         String currentPassword = "P@55w0rd!";
         String token = tokenProvider.getAccessToken("test-user@localhost", currentPassword);
@@ -113,8 +112,10 @@ class CtPasswordCredentialKeycloakProviderTest extends AbstractKeycloakTest {
 
         ExtensionApi apiResource = api(keycloak, testRealm);
         apiResource.setToken(token);
-        String resp = apiResource.callJSON("POST", "/realms/master/api/account/realms/test/credentials/password", body);
-        logger.infof("Update password response: %s", resp);
+        log.info("token {}", token);
+        // TODO fix path
+        apiResource.callJSON("POST", "/realms/master/api/account/realms/test/credentials/password", body);
+//        logger.infof("Update password response: %s", resp);
 
 //        assertThat(testRealm.admin().getEvents().getFirst(), isPasswordCreatedEvent());
     }
