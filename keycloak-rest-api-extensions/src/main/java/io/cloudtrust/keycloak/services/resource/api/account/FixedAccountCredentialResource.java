@@ -10,6 +10,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
+import org.apache.commons.lang3.StringUtils;
 import org.jboss.resteasy.reactive.NoCache;
 import org.keycloak.authentication.CredentialRegistrator;
 import org.keycloak.authentication.RequiredActionProvider;
@@ -176,7 +177,7 @@ public class FixedAccountCredentialResource {
         event.event(EventType.RESET_PASSWORD);
 
         UserCredentialModel cred = new UserCredentialModel("", PasswordCredentialModel.TYPE, update.getCurrentPassword(), false);
-        if (!user.credentialManager().isValid(cred)) {
+        if (!StringUtils.isBlank(update.getCurrentPassword()) && !user.credentialManager().isValid(cred)) {
             event.error(org.keycloak.events.Errors.INVALID_USER_CREDENTIALS);
             throw ErrorResponse.error(Messages.INVALID_PASSWORD_EXISTING, Response.Status.BAD_REQUEST);
         }
