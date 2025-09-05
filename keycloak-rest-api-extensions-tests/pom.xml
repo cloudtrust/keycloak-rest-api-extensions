@@ -79,9 +79,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <systemPropertyVariables>
-                        <kc.spi.realm.restapi.extension.api.terms.of.use.acceptance.delay.days>60</kc.spi.realm.restapi.extension.api.terms.of.use.acceptance.delay.days>
-                    </systemPropertyVariables>
+<!--                    <systemPropertyVariables>-->
+<!--                        <KC_SPI_REALM_RESTAPI_EXTENSION_API_TERMS_OF_USE_ACCEPTANCE_DELAY_DAYS>60</KC_SPI_REALM_RESTAPI_EXTENSION_API_TERMS_OF_USE_ACCEPTANCE_DELAY_DAYS>-->
+<!--                    </systemPropertyVariables>-->
                 </configuration>
             </plugin>
             <plugin>

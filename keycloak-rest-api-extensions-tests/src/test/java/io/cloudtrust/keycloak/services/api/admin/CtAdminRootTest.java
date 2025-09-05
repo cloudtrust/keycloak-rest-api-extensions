@@ -25,38 +25,38 @@ import static org.hamcrest.Matchers.is;
 @Disabled
 @ExtendWith(KeycloakDeploy.class)
 class CtAdminRootTest extends AbstractRestApiExtensionTest {
-//    private static final TypeReference<List<DeletableUserRepresentation>> deletableUserListType = new TypeReference<List<DeletableUserRepresentation>>() {
-//    };
-//    private static final TypeReference<List<EmailInfo>> emailInfoListType = new TypeReference<>() {
-//    };
-//
-//    @BeforeEach
-//    public void initToken() {
-//        this.api().initToken();
-//    }
-//
-//    @Test
-//    void testNoUserDeclinedTOU() throws IOException, URISyntaxException {
-//        // To write a test where there are some users having declined TOU for more than the configured delay,
-//        // we should create sample users with a given creation timestamp far in the past
-//        List<NameValuePair> params = Collections.emptyList();
-//        List<DeletableUserRepresentation> users = api().query(deletableUserListType, "GET", "/realms/master/api/admin/expired-tou-acceptance", params);
-//        assertThat(users.size(), is(0));
-//    }
-//
-//    @Test
-//    void testGetSupportInformation() throws IOException, URISyntaxException {
-//        String email = "search@me.com";
-//        long testStart = System.currentTimeMillis();
-//        createUser("test", u -> {
-//            u.setEmail(email);
-//        });
-//        List<NameValuePair> params = Collections.singletonList(new BasicNameValuePair("email", email));
-//        List<EmailInfo> emailInfo = api().query(emailInfoListType, "GET", "/realms/master/api/admin/support-infos", params);
-//        assertThat(emailInfo.size(), is(1));
-//        EmailInfo found = emailInfo.get(0);
-//        assertThat(found.getRealm(), is("test"));
-//        assertThat(testStart<found.getCreationDate(), is(true));
-//        assertThat(found.getCreationDate()-testStart< Duration.ofSeconds(10).toMillis(), is(true));
-//    }
+    private static final TypeReference<List<DeletableUserRepresentation>> deletableUserListType = new TypeReference<List<DeletableUserRepresentation>>() {
+    };
+    private static final TypeReference<List<EmailInfo>> emailInfoListType = new TypeReference<>() {
+    };
+
+    @BeforeEach
+    public void initToken() {
+        this.api().initToken();
+    }
+
+    @Test
+    void testNoUserDeclinedTOU() throws IOException, URISyntaxException {
+        // To write a test where there are some users having declined TOU for more than the configured delay,
+        // we should create sample users with a given creation timestamp far in the past
+        List<NameValuePair> params = Collections.emptyList();
+        List<DeletableUserRepresentation> users = api().query(deletableUserListType, "GET", "/realms/master/api/admin/expired-tou-acceptance", params);
+        assertThat(users.size(), is(0));
+    }
+
+    @Test
+    void testGetSupportInformation() throws IOException, URISyntaxException {
+        String email = "search@me.com";
+        long testStart = System.currentTimeMillis();
+        createUser("test", u -> {
+            u.setEmail(email);
+        });
+        List<NameValuePair> params = Collections.singletonList(new BasicNameValuePair("email", email));
+        List<EmailInfo> emailInfo = api().query(emailInfoListType, "GET", "/realms/master/api/admin/support-infos", params);
+        assertThat(emailInfo.size(), is(1));
+        EmailInfo found = emailInfo.get(0);
+        assertThat(found.getRealm(), is("test"));
+        assertThat(testStart<found.getCreationDate(), is(true));
+        assertThat(found.getCreationDate()-testStart< Duration.ofSeconds(10).toMillis(), is(true));
+    }
 }
