@@ -6,6 +6,7 @@ import io.quarkus.logging.Log;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.NoCache;
 import org.keycloak.common.Profile;
 import org.keycloak.common.util.CollectionUtil;
@@ -68,6 +69,9 @@ public class CtUsersResource {
     private final AdminPermissionEvaluator auth;
     private final AdminEventBuilder adminEvent;
     private final KeycloakSession session;
+
+    private static final Logger logger = Logger.getLogger(CtUsersResource.class);
+
 
     public CtUsersResource(KeycloakSession session, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
         this.session = session;
@@ -367,6 +371,7 @@ public class CtUsersResource {
                                             @Parameter(description = "Boolean which defines whether brief representations are returned (default: false)") @QueryParam("briefRepresentation") Boolean briefRepresentation,
                                             @Parameter(description = "Boolean which defines whether the params \"last\", \"first\", \"email\" and \"username\" must match exactly") @QueryParam("exact") Boolean exact,
                                             @Parameter(description = "A query to search for custom attributes, in the format 'key1:value2 key2:value2'") @QueryParam("q") String searchQuery) {
+        logger.info("entering");
         UserPermissionEvaluator userPermissionEvaluator = auth.users();
         userPermissionEvaluator.requireQuery();
 
@@ -377,6 +382,7 @@ public class CtUsersResource {
                 ? Collections.emptyMap()
                 : SearchQueryUtils.getFields(searchQuery);
 
+        logger.info("entering 2");
         if (!CollectionUtil.isEmpty(groups)) {
             session.setAttribute(UserModel.GROUPS, new HashSet<>(groups));
         }
@@ -384,6 +390,7 @@ public class CtUsersResource {
             session.setAttribute("filterRoles", new HashSet<>(roles));
         }
 
+        logger.info("entering 3");
         RealmModel realm = this.session.getContext().getRealm();
         Stream<UserModel> userModels = Stream.empty();
         int count = 0;
