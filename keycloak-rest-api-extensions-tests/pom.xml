@@ -83,11 +83,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-<!--                    <systemPropertyVariables>-->
-<!--                        <KC_SPI_REALM_RESTAPI_EXTENSION_API_TERMS_OF_USE_ACCEPTANCE_DELAY_DAYS>60</KC_SPI_REALM_RESTAPI_EXTENSION_API_TERMS_OF_USE_ACCEPTANCE_DELAY_DAYS>-->
-<!--                    </systemPropertyVariables>-->
-                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-install-plugin</artifactId>

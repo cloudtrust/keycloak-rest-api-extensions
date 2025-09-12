@@ -5,10 +5,16 @@ import org.keycloak.testframework.server.KeycloakServerConfigBuilder;
 
 public class ServerConfig implements KeycloakServerConfig {
 
+    private final KeycloakSystemVariables keycloakSystemVariables;
+
+    public ServerConfig() {
+        this.keycloakSystemVariables = new KeycloakSystemVariables();
+    }
+
     @Override
     public KeycloakServerConfigBuilder configure(KeycloakServerConfigBuilder keycloakServerConfigBuilder) {
         return keycloakServerConfigBuilder
-                .option("spi-realm-restapi-extension-api-terms-of-use-acceptance-delay-days","60")
+                .options(keycloakSystemVariables.load())
                 .dependency("io.cloudtrust", "cloudtrust-common")
                 .dependency("io.cloudtrust", "kc-cloudtrust-common")
                 .dependency("io.cloudtrust", "keycloak-rest-api-extensions");
