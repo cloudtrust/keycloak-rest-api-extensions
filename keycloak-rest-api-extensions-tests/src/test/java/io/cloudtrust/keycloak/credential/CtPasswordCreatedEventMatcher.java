@@ -18,7 +18,7 @@ public class CtPasswordCreatedEventMatcher extends BaseMatcher<EventRepresentati
         if (item instanceof EventRepresentation event) {
             return event.getType().equals(EventType.CUSTOM_REQUIRED_ACTION.toString()) &&
                     isResetPassword(event.getDetails().get(Events.CT_EVENT_TYPE)) &&
-                    event.getDetails().containsKey("credentialId") &&
+                    event.getDetails().containsKey(Events.CT_EVENT_CREDENTIAL_ID) &&
                     StringUtils.isEmpty(event.getError());
         }
         return false;

@@ -80,7 +80,7 @@ public class CtPasswordCredentialProvider extends PasswordCredentialProvider {
             adminEventBuilder.operation(OperationType.CREATE)
                     .resource(ResourceType.CUSTOM)
                     .resourcePath("users", user.getId())
-                    .representation(Map.of("credentialId", credentialId, "credentialType", "password"))
+                    .representation(Map.of(Events.CT_EVENT_CREDENTIAL_ID, credentialId, "credential_type", "password"))
                     .success();
         }
     }
@@ -90,7 +90,7 @@ public class CtPasswordCredentialProvider extends PasswordCredentialProvider {
         eventBuilder.event(EventType.CUSTOM_REQUIRED_ACTION)
                 .user(user)
                 .detail(Events.CT_EVENT_TYPE, EventType.RESET_PASSWORD.toString())
-                .detail("credentialId", credentialId)
+                .detail(Events.CT_EVENT_CREDENTIAL_ID, credentialId)
                 .success();
     }
 }
