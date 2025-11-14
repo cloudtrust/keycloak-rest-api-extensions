@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>keycloak-rest-api-extensions-parent</artifactId>
-    <version>26.3.1-SNAPSHOT</version>
+    <version>26.3.1</version>
     <description>Parent for rest API extensions</description>
     <packaging>pom</packaging>
 
@@ -17,7 +17,7 @@
         <connection>scm:git:ssh://git@github.com/cloudtrust/keycloak-rest-api-extensions</connection>
         <developerConnection>scm:git:ssh://git@github.com/cloudtrust/keycloak-rest-api-extensions</developerConnection>
         <url>https://github.com/cloudtrust/keycloak-rest-api-extensions</url>
-        <tag>HEAD</tag>
+        <tag>26.3.1</tag>
     </scm>
 
     <modules>
