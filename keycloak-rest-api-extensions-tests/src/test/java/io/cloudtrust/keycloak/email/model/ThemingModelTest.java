@@ -1,21 +1,20 @@
 package io.cloudtrust.keycloak.email.model;
 
+import io.cloudtrust.tests.GetterSetterVerifier;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
-import io.cloudtrust.tests.GetterSetterVerifier;
-
 class ThemingModelTest {
     @Test
     void getSetTest() {
         GetterSetterVerifier.forClass(ThemingModel.class).usesDefaultConstructors()
-            .usesConstructor(List.class, () -> new ArrayList<String>())
-            .usesConstructor(Map.class, () -> new HashMap<String, String>())
+            .usesConstructor(List.class, ArrayList::new)
+            .usesConstructor(Map.class, HashMap::new)
             .verify();
     }
 
@@ -24,7 +23,7 @@ class ThemingModelTest {
         // Null subject parameters
         ThemingModel model = new ThemingModel();
         Assertions.assertNull(model.getSubjectParameters());
-        Assertions.assertEquals(model.getSubjectParametersAsArray().length, 0);
+        Assertions.assertEquals(0, model.getSubjectParametersAsArray().length);
         // Empty subject parameters
         model.setSubjectParameters(new ArrayList<>());
         Assertions.assertEquals(0, model.getSubjectParameters().size());

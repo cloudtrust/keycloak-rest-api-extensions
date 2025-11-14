@@ -1,9 +1,8 @@
 package io.cloudtrust.keycloak.email.model;
 
+import io.cloudtrust.tests.GetterSetterVerifier;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import io.cloudtrust.tests.GetterSetterVerifier;
 
 class BasicMessageModelTest {
     @Test
