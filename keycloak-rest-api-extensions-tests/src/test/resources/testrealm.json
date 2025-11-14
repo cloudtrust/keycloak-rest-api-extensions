@@ -181,21 +181,21 @@
     {
       "clientId": "test-app",
       "enabled": true,
-      "baseUrl": "http://localhost:8180/realms/master/app/auth",
+      "baseUrl": "http://localhost:8080/realms/master/app/auth",
       "redirectUris": [
-        "http://localhost:8180/*"
+        "http://localhost:8080/*"
       ],
-      "adminUrl": "http://localhost:8180/realms/master/app/admin",
+      "adminUrl": "http://localhost:8080/realms/master/app/admin",
       "secret": "password"
     },
     {
       "clientId": "root-url-client",
       "enabled": true,
-      "rootUrl": "http://localhost:8180/foo/bar",
-      "adminUrl": "http://localhost:8180/foo/bar",
+      "rootUrl": "http://localhost:8080/foo/bar",
+      "adminUrl": "http://localhost:8080/foo/bar",
       "baseUrl": "/baz",
       "redirectUris": [
-        "http://localhost:8180/foo/bar/*"
+        "http://localhost:8080/foo/bar/*"
       ],
       "secret": "password"
     },
@@ -204,7 +204,7 @@
       "enabled": true,
 
       "redirectUris": [
-        "http://localhost:8180/realms/master/app/*"
+        "http://localhost:8080/realms/master/app/*"
       ],
       "secret": "password",
       "fullScopeAllowed": "false"
@@ -214,9 +214,9 @@
       "enabled": true,
       "consentRequired": true,
 
-      "baseUrl": "http://localhost:8180/realms/master/app/auth",
+      "baseUrl": "http://localhost:8080/realms/master/app/auth",
       "redirectUris": [
-        "http://localhost:8180/realms/master/app/*"
+        "http://localhost:8080/realms/master/app/*"
       ],
       "secret": "password"
     },
@@ -382,22 +382,22 @@
       "clientId": "named-test-app",
       "name": "My Named Test App",
       "enabled": true,
-      "baseUrl": "http://localhost:8180/namedapp/base",
+      "baseUrl": "http://localhost:8080/namedapp/base",
       "redirectUris": [
-        "http://localhost:8180/namedapp/base/*"
+        "http://localhost:8080/namedapp/base/*"
       ],
-      "adminUrl": "http://localhost:8180/namedapp/base/admin",
+      "adminUrl": "http://localhost:8080/namedapp/base/admin",
       "secret": "password"
     },
     {
       "clientId": "var-named-test-app",
       "name": "Test App Named - ${client_account}",
       "enabled": true,
-      "baseUrl": "http://localhost:8180/varnamedapp/base",
+      "baseUrl": "http://localhost:8080/varnamedapp/base",
       "redirectUris": [
-        "http://localhost:8180/varnamedapp/base/*"
+        "http://localhost:8080/varnamedapp/base/*"
       ],
-      "adminUrl": "http://localhost:8180/varnamedapp/base/admin",
+      "adminUrl": "http://localhost:8080/varnamedapp/base/admin",
       "secret": "password"
     },
     {
