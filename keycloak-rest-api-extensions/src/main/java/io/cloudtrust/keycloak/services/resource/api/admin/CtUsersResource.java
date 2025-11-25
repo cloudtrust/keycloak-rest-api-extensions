@@ -2,7 +2,19 @@ package io.cloudtrust.keycloak.services.resource.api.admin;
 
 import io.cloudtrust.keycloak.representations.idm.UsersPageRepresentation;
 import io.quarkus.logging.Log;
-
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
@@ -36,8 +48,8 @@ import org.keycloak.userprofile.UserProfileProvider;
 import org.keycloak.utils.SearchQueryUtils;
 
 import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.GET;
 import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -46,20 +58,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.UUID;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 import static org.keycloak.models.utils.KeycloakModelUtils.findGroupByPath;
 import static org.keycloak.userprofile.UserProfileContext.USER_API;

@@ -1,22 +1,20 @@
 package io.cloudtrust.keycloak.services.api.admin;
 
-import com.icegreen.greenmail.util.GreenMail;
-import com.icegreen.greenmail.util.ServerSetupTest;
 import io.cloudtrust.keycloak.AbstractRestApiExtensionTest;
 import io.cloudtrust.keycloak.ExecuteActionsEmailHelper;
-import io.cloudtrust.keycloak.test.container.KeycloakDeploy;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-import org.apache.http.client.HttpResponseException;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-
+import io.cloudtrust.keycloak.config.ServerConfig;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import org.apache.http.client.HttpResponseException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.keycloak.testframework.annotations.KeycloakIntegrationTest;
+import org.keycloak.testframework.mail.MailServer;
+import org.keycloak.testframework.mail.annotations.InjectMailServer;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -24,23 +22,14 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 
-@ExtendWith(KeycloakDeploy.class)
+@KeycloakIntegrationTest(config = ServerConfig.class)
 class CtUserResourceTest extends AbstractRestApiExtensionTest {
-    private static GreenMail greenMail;
+
+    @InjectMailServer
+    MailServer mailServer;
 
     private static final String[] ACTIONS = new String[]{ExecuteActionsEmailHelper.VERIFY_EMAIL_ACTION};
     private static final String EXECUTE_ACTIONS_EMAIL_FMT = "/realms/master/api/admin/realms/test/users/%s/execute-actions-email";
-
-    @BeforeAll
-    public static void setupGreenMail() {
-        greenMail = new GreenMail(ServerSetupTest.SMTP);
-        greenMail.start();
-    }
-
-    @AfterAll
-    public static void shutdownGreenMail() {
-        greenMail.stop();
-    }
 
     @Test
     void sendExecuteActionsEmailNominalCaseTest() throws IOException, URISyntaxException, MessagingException {
@@ -63,33 +52,33 @@ class CtUserResourceTest extends AbstractRestApiExtensionTest {
     @Test
     void sendExecuteActionsEmailRealmNotFoundTest() throws IOException, URISyntaxException {
         // unknown realm does not exist
-        failureCase("?themeRealm=unknown", 400);
+        failureCase();
     }
 
     private void successCase(String queryParams) throws IOException, URISyntaxException, MessagingException {
-        String id = this.getRealm().users().search("john-doh@localhost").get(0).getId();
+        String id = testRealm.admin().users().search("john-doh@localhost").getFirst().getId();
         String path = String.format(EXECUTE_ACTIONS_EMAIL_FMT, id);
-        int nbReceived = greenMail.getReceivedMessages().length;
+        int nbReceived = mailServer.getReceivedMessages().length;
 
-        this.api().callJSON("PUT", path + queryParams, ACTIONS);
-        assertThat(greenMail.getReceivedMessages().length, is(nbReceived + 1));
-        MimeMessage mail = greenMail.getReceivedMessages()[nbReceived];
+        api().callJSON("PUT", path + queryParams, ACTIONS);
+        assertThat(mailServer.getReceivedMessages().length, is(nbReceived + 1));
+        MimeMessage mail = mailServer.getReceivedMessages()[nbReceived];
         assertThat(mail, is(not(nullValue())));
         String mailContent = getMailContent(mail);
         assertThat(mailContent, containsString("ct-verify-email"));
     }
 
-    private void failureCase(String queryParams, int expectedHttpStatusCode) throws IOException, URISyntaxException {
-        String id = this.getRealm().users().search("john-doh@localhost").get(0).getId();
+    private void failureCase() throws IOException, URISyntaxException {
+        String id = testRealm.admin().users().search("john-doh@localhost").getFirst().getId();
         String path = String.format(EXECUTE_ACTIONS_EMAIL_FMT, id);
-        int nbReceived = greenMail.getReceivedMessages().length;
+        int nbReceived = mailServer.getReceivedMessages().length;
 
         try {
-            this.api().callJSON("PUT", path + queryParams, ACTIONS);
+            this.api().callJSON("PUT", path + "?themeRealm=unknown", ACTIONS);
             Assertions.fail();
         } catch (HttpResponseException hre) {
-            assertThat(hre.getStatusCode(), is(expectedHttpStatusCode));
-            assertThat(greenMail.getReceivedMessages().length, is(nbReceived));
+            assertThat(hre.getStatusCode(), is(400));
+            assertThat(mailServer.getReceivedMessages().length, is(nbReceived));
         }
     }
 
