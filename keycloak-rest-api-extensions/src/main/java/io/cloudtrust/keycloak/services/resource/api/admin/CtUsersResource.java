@@ -2,7 +2,17 @@ package io.cloudtrust.keycloak.services.resource.api.admin;
 
 import io.cloudtrust.keycloak.representations.idm.UsersPageRepresentation;
 import io.quarkus.logging.Log;
-
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
@@ -34,18 +44,6 @@ import org.keycloak.services.resources.admin.permissions.UserPermissionEvaluator
 import org.keycloak.userprofile.UserProfile;
 import org.keycloak.userprofile.UserProfileProvider;
 import org.keycloak.utils.SearchQueryUtils;
-
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -167,7 +165,7 @@ public class CtUsersResource {
         } catch (ModelIllegalStateException e) {
             Log.error(e.getMessage(), e);
             throw ErrorResponse.error(e.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
-        } catch (ModelException me){
+        } catch (ModelException me) {
             Log.warn("Could not create user", me);
             throw ErrorResponse.error("Could not create user", Response.Status.BAD_REQUEST);
         }
@@ -455,8 +453,8 @@ public class CtUsersResource {
                 .filter(user -> canViewGlobal || usersEvaluator.canView(user))
                 .map(user -> {
                     UserRepresentation userRep = briefRepresentationB
-                        ? ModelToRepresentation.toBriefRepresentation(user)
-                        : ModelToRepresentation.toRepresentation(this.session, realm, user);
+                            ? ModelToRepresentation.toBriefRepresentation(user)
+                            : ModelToRepresentation.toRepresentation(this.session, realm, user);
                     userRep.setAccess(usersEvaluator.getAccess(user));
                     return userRep;
                 })
