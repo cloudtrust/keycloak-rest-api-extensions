@@ -118,7 +118,7 @@ public class CtUserResource {
             attributes.putAll(emailModel.getTheming().getTemplateParameters());
         }
 
-        return EmailSender.sendMail(kcSession, realm, emailModel, locale, attributes);
+        return EmailSender.sendMail(kcSession, realm, user, emailModel, locale, attributes);
     }
 
     /**

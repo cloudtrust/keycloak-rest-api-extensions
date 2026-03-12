@@ -11,6 +11,7 @@ import org.keycloak.events.EventBuilder;
 import org.keycloak.events.EventType;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.UserModel;
 import org.keycloak.services.ErrorResponse;
 
 import java.util.Locale;
@@ -20,12 +21,12 @@ public class EmailSender {
     private EmailSender() {
     }
 
-    public static Response sendMail(KeycloakSession session, EmailModel emailModel, Locale locale, Map<String, Object> attributes) {
+    public static Response sendMail(KeycloakSession session, UserModel user, EmailModel emailModel, Locale locale, Map<String, Object> attributes) {
         RealmModel realm = session.getContext().getRealm();
-        return sendMail(session, realm, emailModel, locale, attributes);
+        return sendMail(session, realm, user, emailModel, locale, attributes);
     }
 
-    public static Response sendMail(KeycloakSession session, RealmModel realm, EmailModel emailModel, Locale locale, Map<String, Object> attributes) {
+    public static Response sendMail(KeycloakSession session, RealmModel realm, UserModel user, EmailModel emailModel, Locale locale, Map<String, Object> attributes) {
         if (emailModel.getTheming() == null && emailModel.getBasicMessage() == null) {
             throw ErrorResponse.error("Either BasicMessage or Theming configuration should be configured", Response.Status.BAD_REQUEST);
         }
@@ -42,7 +43,7 @@ public class EmailSender {
         String receiverAddress = emailModel.getRecipient();
         EventBuilder eventBuilder = new EventBuilder(realm, session, session.getContext().getConnection());
         eventBuilder.event(EventType.CUSTOM_REQUIRED_ACTION)
-                .user(session.users().getUserByEmail(realm, receiverAddress))
+                .detail("userId", user.getId())
                 .detail("receiverAddress", receiverAddress)
                 .detail("themeRealmName", emailModel.getTheming().getThemeRealmName())
                 .detail("locale", emailModel.getTheming().getLocale())

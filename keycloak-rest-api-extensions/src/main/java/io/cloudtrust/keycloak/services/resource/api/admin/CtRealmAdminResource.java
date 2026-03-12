@@ -40,27 +40,4 @@ public class CtRealmAdminResource {
     public StatisticsResource statistics() {
         return new StatisticsResource(session, auth);
     }
-
-    @Path("send-email")
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response sendMail(EmailModel emailModel) {
-        auth.users().requireManage();
-
-        if (StringUtils.isBlank(emailModel.getRecipient())) {
-            throw ErrorResponse.error("Recipient email missing", Response.Status.BAD_REQUEST);
-        }
-
-        RealmModel realm = this.session.getContext().getRealm();
-        Locale locale = realm.getDefaultLocale() != null ? Locale.forLanguageTag(realm.getDefaultLocale()) : Locale.ENGLISH;
-        UriBuilder builder = LoginActionsService.loginActionsBaseUrl(session.getContext().getUri());
-        String link = builder.build(session.getContext().getRealm().getName()).toString() + "/";
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put("link", link);
-        if (emailModel.getTheming() != null && emailModel.getTheming().getTemplateParameters() != null) {
-            emailModel.getTheming().getTemplateParameters().forEach(attributes::put);
-        }
-
-        return EmailSender.sendMail(this.session, emailModel, locale, attributes);
-    }
 }
