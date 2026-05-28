@@ -107,13 +107,17 @@ public class CtExecuteActionsActionTokenHandler extends AbstractActionTokenHandl
                     .createErrorPage(Response.Status.NOT_FOUND);
         }
 
-        EventBuilder eventBuilder = new EventBuilder(realm, session, tokenContext.getClientConnection());
-        eventBuilder.event(EventType.CUSTOM_REQUIRED_ACTION)
-                .user(user)
-                .detail("new_email", user.getEmail())
-                .detail("old_email", oldEmail)
-                .detail(Events.CT_EVENT_TYPE, "EMAIL_CHANGE_ACCEPTED")
-                .success();
+        String newEmail = user.getEmail();
+
+        if (!oldEmail.equals(newEmail)) {
+            EventBuilder eventBuilder = new EventBuilder(realm, session, tokenContext.getClientConnection());
+            eventBuilder.event(EventType.CUSTOM_REQUIRED_ACTION)
+                    .user(user)
+                    .detail("new_email", user.getEmail())
+                    .detail("old_email", oldEmail)
+                    .detail(Events.CT_EVENT_TYPE, "EMAIL_CHANGE_ACCEPTED")
+                    .success();
+        }
 
         String nextAction = AuthenticationManager.nextRequiredAction(tokenContext.getSession(), authSession, tokenContext.getRequest(), tokenContext.getEvent());
         return AuthenticationManager.redirectToRequiredActions(tokenContext.getSession(), tokenContext.getRealm(), authSession, tokenContext.getUriInfo(), nextAction);
