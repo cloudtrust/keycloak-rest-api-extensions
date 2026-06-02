@@ -1,5 +1,6 @@
 package io.cloudtrust.keycloak.authentication.actiontoken;
 
+import io.cloudtrust.keycloak.Events;
 import io.cloudtrust.keycloak.ExecuteActionsEmailHelper;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
@@ -10,6 +11,7 @@ import org.keycloak.authentication.actiontoken.AbstractActionTokenHandler;
 import org.keycloak.authentication.actiontoken.ActionTokenContext;
 import org.keycloak.authentication.actiontoken.TokenUtils;
 import org.keycloak.events.Errors;
+import org.keycloak.events.EventBuilder;
 import org.keycloak.events.EventType;
 import org.keycloak.forms.login.LoginFormsProvider;
 import org.keycloak.models.Constants;
@@ -96,11 +98,25 @@ public class CtExecuteActionsActionTokenHandler extends AbstractActionTokenHandl
         token.getRequiredActions().forEach(authSession::addRequiredAction);
 
         UserModel user = tokenContext.getAuthenticationSession().getAuthenticatedUser();
+        String oldEmail = user.getEmail();
+
         // verify user email as we know it is valid as this entry point would never have gotten here.
         if (!setEmailVerified(user, token)) {
             return session.getProvider(LoginFormsProvider.class)
                     .setError("expiredActionTokenNoSessionMessage")
                     .createErrorPage(Response.Status.NOT_FOUND);
+        }
+
+        String newEmail = user.getEmail();
+
+        if (!oldEmail.equals(newEmail)) {
+            EventBuilder eventBuilder = new EventBuilder(realm, session, tokenContext.getClientConnection());
+            eventBuilder.event(EventType.CUSTOM_REQUIRED_ACTION)
+                    .user(user)
+                    .detail("new_email", user.getEmail())
+                    .detail("old_email", oldEmail)
+                    .detail(Events.CT_EVENT_TYPE, "EMAIL_CHANGE_ACCEPTED")
+                    .success();
         }
 
         String nextAction = AuthenticationManager.nextRequiredAction(tokenContext.getSession(), authSession, tokenContext.getRequest(), tokenContext.getEvent());
