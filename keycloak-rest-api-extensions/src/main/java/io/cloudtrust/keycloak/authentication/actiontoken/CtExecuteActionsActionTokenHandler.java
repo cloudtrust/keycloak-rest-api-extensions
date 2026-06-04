@@ -2,6 +2,9 @@ package io.cloudtrust.keycloak.authentication.actiontoken;
 
 import io.cloudtrust.keycloak.Events;
 import io.cloudtrust.keycloak.ExecuteActionsEmailHelper;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
 import org.keycloak.TokenVerifier;
@@ -28,9 +31,6 @@ import org.keycloak.services.messages.Messages;
 import org.keycloak.sessions.AuthenticationSessionCompoundId;
 import org.keycloak.sessions.AuthenticationSessionModel;
 
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.UriBuilder;
-import jakarta.ws.rs.core.UriInfo;
 import java.util.Objects;
 
 /**
@@ -109,10 +109,11 @@ public class CtExecuteActionsActionTokenHandler extends AbstractActionTokenHandl
 
         String newEmail = user.getEmail();
 
-        if (!oldEmail.equals(newEmail)) {
+        if (!Objects.equals(oldEmail, newEmail)) {
             EventBuilder eventBuilder = new EventBuilder(realm, session, tokenContext.getClientConnection());
             eventBuilder.event(EventType.CUSTOM_REQUIRED_ACTION)
                     .user(user)
+                    .detail(Events.CT_EVENT_USERNAME, user.getUsername())
                     .detail("new_email", user.getEmail())
                     .detail("old_email", oldEmail)
                     .detail(Events.CT_EVENT_TYPE, "EMAIL_CHANGE_ACCEPTED")
