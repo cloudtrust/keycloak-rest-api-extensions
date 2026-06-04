@@ -109,10 +109,11 @@ public class CtExecuteActionsActionTokenHandler extends AbstractActionTokenHandl
 
         String newEmail = user.getEmail();
 
-        if (!oldEmail.equals(newEmail)) {
+        if (!Objects.equals(oldEmail, newEmail)) {
             EventBuilder eventBuilder = new EventBuilder(realm, session, tokenContext.getClientConnection());
             eventBuilder.event(EventType.CUSTOM_REQUIRED_ACTION)
                     .user(user)
+                    .detail(Events.CT_EVENT_USERNAME, user.getUsername())
                     .detail("new_email", user.getEmail())
                     .detail("old_email", oldEmail)
                     .detail(Events.CT_EVENT_TYPE, "EMAIL_CHANGE_ACCEPTED")
