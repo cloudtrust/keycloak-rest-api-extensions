@@ -2,6 +2,7 @@ package io.cloudtrust.keycloak.services.resource.api;
 
 import io.cloudtrust.keycloak.services.resource.api.account.CtAccountLoader;
 import io.cloudtrust.keycloak.services.resource.api.admin.CtAdminRoot;
+import io.cloudtrust.keycloak.services.resource.api.idp.CtIdpRoot;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -27,6 +28,13 @@ public class ApiRoot {
         return new CtAdminRoot(session, apiConfig);
     }
 
+    /**
+     * @return The IDP API
+     */
+    @Path("idp")
+    public Object getIdpApiRoot() {
+        return new CtIdpRoot(session);
+    }
 
     @Path("account/realms/{realm}")
     public Object getAccountApiRoot(final @PathParam("realm") String name) {

@@ -10,6 +10,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
@@ -52,7 +53,7 @@ public class CtUserResource {
 
     protected static final String ATTRIB_NAME_ID = "saml.persistent.name.id.for.*";
 
-    private UserResource kcUserResource;
+    private final UserResource kcUserResource;
     private final AdminPermissionEvaluator auth;
     private final AdminEventBuilder adminEvent;
     private final KeycloakSession kcSession;
