@@ -14,6 +14,8 @@ import org.keycloak.services.managers.RealmManager;
 import org.keycloak.services.resources.admin.AdminAuth;
 
 public class ApiCommon {
+
+    private ApiCommon() {}
     /*
      * Copied/pasted from org.keycloak.services.resources.admin.AdminRoot
      */
@@ -45,6 +47,6 @@ public class ApiCommon {
             throw new NotAuthorizedException("Bearer");
         }
 
-        return new AdminAuth(realm, authResult.getToken(), authResult.getUser(), authResult.getClient());
+        return new AdminAuth(realm, authResult.token(), authResult.user(), authResult.client());
     }
 }

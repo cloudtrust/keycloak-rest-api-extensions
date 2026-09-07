@@ -5,17 +5,16 @@
     <parent>
         <groupId>io.cloudtrust</groupId>
         <artifactId>kc-cloudtrust-testsuite</artifactId>
-        <version>26.1.1</version>
+        <version>27.0.0-SNAPSHOT</version>
         <relativePath />
     </parent>
 
     <artifactId>keycloak-rest-api-extensions-tests</artifactId>
-    <version>26.6.1-SNAPSHOT</version>
+    <version>27.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
         <maven.compiler.release>${java.version}</maven.compiler.release>
-        <version.pmd.plugin>3.12.0</version.pmd.plugin>
     </properties>
 
     <dependencies>
@@ -36,11 +35,15 @@
             <groupId>org.keycloak.testframework</groupId>
             <artifactId>keycloak-test-framework-core</artifactId>
             <version>${keycloak.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.keycloak.testframework</groupId>
-            <artifactId>keycloak-test-framework-ui</artifactId>
-            <version>${keycloak.version}</version>
+            <!-- Clashes with the undertow-servlet we get through kc-cloudtrust-test-tools.
+                 The parent excludes it on its own declaration only; exclusions do not
+                 propagate to this direct declaration. -->
+            <exclusions>
+                <exclusion>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-undertow-spi</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.keycloak.testframework</groupId>
@@ -83,6 +86,12 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <systemPropertyVariables>
+                        <!-- Raise Quarkus startup timeout: the default 120s can be exceeded on slow/contended machines or slow network connectivity
+                            This is relevant for Mauritius team due to connectivity latency with artifactory. Please do not modify!
+                        -->
+                        <keycloak.distribution.start.timeout>300</keycloak.distribution.start.timeout>
+                    </systemPropertyVariables>
                     <environmentVariables>
                         <KC_BOOTSTRAP_ADMIN_USERNAME>admin</KC_BOOTSTRAP_ADMIN_USERNAME>
                         <KC_BOOTSTRAP_ADMIN_PASSWORD>admin</KC_BOOTSTRAP_ADMIN_PASSWORD>

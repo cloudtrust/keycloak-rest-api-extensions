@@ -16,7 +16,7 @@ import org.keycloak.models.UserManager;
 import org.keycloak.models.UserModel;
 import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
-import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
+import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
 
 import java.util.Optional;
 
@@ -25,7 +25,7 @@ public class CtIdpRealmResource {
     private final AdminPermissionEvaluator auth;
     private final AdminEventBuilder adminEvent;
 
-    private final String EXTIDP_TEAMMEMBER_GROUP = "extidp_teammember";
+    private static final String EXTIDP_TEAMMEMBER_GROUP = "extidp_teammember";
 
     private static final Logger logger = Logger.getLogger(CtIdpRealmResource.class);
 
@@ -36,6 +36,7 @@ public class CtIdpRealmResource {
     }
 
     /**
+     *
      * Delete an external IDP team member user.
      *
      * @param userId the user ID to delete

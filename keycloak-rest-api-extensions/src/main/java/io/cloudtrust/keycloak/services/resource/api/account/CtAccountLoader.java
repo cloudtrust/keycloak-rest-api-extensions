@@ -69,7 +69,7 @@ public class CtAccountLoader {
                 throw new NotAuthorizedException("Bearer token required");
             }
 
-            Auth auth = new Auth(session.getContext().getRealm(), authResult.getToken(), authResult.getUser(), client, authResult.getSession(), false);
+            Auth auth = new Auth(session.getContext().getRealm(), authResult.token(), authResult.user(), client, authResult.session(), false);
             return new FixedAccountRestService(session, auth, event);
         } else if (accountResourceProvider != null) {
             return accountResourceProvider.getResource();
@@ -85,6 +85,7 @@ public class CtAccountLoader {
                 return session.getProvider(AccountResourceProvider.class, theme.getProperties().getProperty(Theme.ACCOUNT_RESOURCE_PROVIDER_KEY));
             }
         } catch (IOException ignore) {
+            //ignore
         }
         return session.getProvider(AccountResourceProvider.class);
     }

@@ -39,8 +39,8 @@ import org.keycloak.services.ErrorResponseException;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.services.resources.admin.AdminRoot;
 import org.keycloak.services.resources.admin.UserResource;
-import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
-import org.keycloak.services.resources.admin.permissions.UserPermissionEvaluator;
+import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
+import org.keycloak.services.resources.admin.fgap.UserPermissionEvaluator;
 import org.keycloak.userprofile.UserProfile;
 import org.keycloak.userprofile.UserProfileProvider;
 import org.keycloak.utils.SearchQueryUtils;
@@ -128,10 +128,6 @@ public class CtUsersResource {
         }
 
         RealmModel realm = this.session.getContext().getRealm();
-        String username = rep.getUsername();
-        if (realm.isRegistrationEmailAsUsername()) {
-            username = rep.getEmail();
-        }
 
         UserProfileProvider profileProvider = session.getProvider(UserProfileProvider.class);
 

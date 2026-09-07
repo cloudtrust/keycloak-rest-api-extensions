@@ -29,7 +29,7 @@ public class CtIdpRoot {
         AdminAuth auth = ApiCommon.authenticateRealmAdminRequest(session, request.getHttpHeaders());
 
         logger.debugf("authenticated idp access for: %s", auth.getUser().getUsername());
-        Cors.builder().allowedOrigins(auth.getToken()).allowedMethods("DELETE").exposedHeaders("Location").auth().add();
+        Cors.builder().checkAllowedOrigins(auth.getToken()).allowedMethods("DELETE").exposedHeaders("Location").auth().add();
 
         return new CtIdpRealmsResource(auth, session);
     }

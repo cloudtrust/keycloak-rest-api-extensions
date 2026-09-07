@@ -47,7 +47,9 @@ public class CtPasswordCredentialProvider extends PasswordCredentialProvider {
             return;
         }
 
-        String token = AppAuthManager.extractAuthorizationHeaderTokenOrReturnNull(session.getContext().getRequestHeaders());
+        // Since Keycloak 26.6.4 this returns a nullable AuthHeader (scheme + token) instead of the raw token.
+        AppAuthManager.AuthHeader authHeader = AppAuthManager.extractAuthorizationHeaderTokenOrReturnNull(session.getContext().getRequestHeaders());
+        String token = authHeader == null ? null : authHeader.getToken();
         if (StringUtils.isBlank(token)) {
             emitUpdatePasswordEvent(realm, user, credentialId);
             return;
