@@ -1,24 +1,13 @@
 package io.cloudtrust.keycloak.services.resource.api.admin;
 
-import io.cloudtrust.keycloak.email.EmailSender;
-import io.cloudtrust.keycloak.email.model.EmailModel;
-import org.apache.commons.lang3.StringUtils;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.RealmModel;
-import org.keycloak.services.ErrorResponse;
-import org.keycloak.services.resources.LoginActionsService;
-import org.keycloak.services.resources.admin.AdminEventBuilder;
-import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.POST;
+import org.keycloak.models.KeycloakSession;
+
+import org.keycloak.services.resources.admin.AdminEventBuilder;
+import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
+
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.UriBuilder;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
+
 
 public class CtRealmAdminResource {
     private final AdminPermissionEvaluator auth;

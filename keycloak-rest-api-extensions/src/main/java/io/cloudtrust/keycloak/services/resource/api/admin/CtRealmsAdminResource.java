@@ -11,8 +11,8 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.services.managers.RealmManager;
 import org.keycloak.services.resources.admin.AdminAuth;
 import org.keycloak.services.resources.admin.AdminEventBuilder;
-import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
-import org.keycloak.services.resources.admin.permissions.AdminPermissions;
+import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
+import org.keycloak.services.resources.admin.fgap.AdminPermissions;
 
 public class CtRealmsAdminResource {
     private KeycloakSession session;
@@ -36,7 +36,7 @@ public class CtRealmsAdminResource {
         RealmModel realm = realmManager.getRealmByName(name);
         if (realm == null) throw new NotFoundException("Realm not found.");
 
-        if (!auth.getRealm().equals(realmManager.getKeycloakAdminstrationRealm()) && !auth.getRealm().equals(realm)) {
+        if (!auth.getRealm().equals(realmManager.getKeycloakAdministrationRealm()) && !auth.getRealm().equals(realm)) {
             throw new ForbiddenException();
         }
         AdminPermissionEvaluator realmAuth = AdminPermissions.evaluator(session, realm, auth);

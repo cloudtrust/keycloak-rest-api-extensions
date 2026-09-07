@@ -26,8 +26,8 @@ import org.keycloak.services.cors.Cors;
 import org.keycloak.services.managers.RealmManager;
 import org.keycloak.services.resources.admin.AdminAuth;
 import org.keycloak.services.resources.admin.RealmsAdminResourcePreflight;
-import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
-import org.keycloak.services.resources.admin.permissions.AdminPermissions;
+import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
+import org.keycloak.services.resources.admin.fgap.AdminPermissions;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +35,8 @@ import java.util.concurrent.TimeUnit;
 public class CtAdminRoot {
     protected static final Logger logger = Logger.getLogger(CtAdminRoot.class);
     private static final String MSG_AUTH_ADMIN_ACCESS = "authenticated admin access for: {}";
+    private static final String LOCATION = "Location";
+    private static final String DELETE = "DELETE";
 
     private final KeycloakSession session;
     private final ApiConfig apiConfig;
@@ -64,7 +66,8 @@ public class CtAdminRoot {
         }
 
         logger.debugf(MSG_AUTH_ADMIN_ACCESS, auth.getUser().getUsername());
-        Cors.builder().allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().add();
+
+        Cors.builder().checkAllowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", DELETE).exposedHeaders(LOCATION).auth().add();
 
         return new CtRealmsAdminResource(auth, session);
     }
@@ -87,11 +90,11 @@ public class CtAdminRoot {
         }
 
         logger.debugf(MSG_AUTH_ADMIN_ACCESS, auth.getUser().getUsername());
-        Cors.builder().allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().add();
+        Cors.builder().checkAllowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", DELETE).exposedHeaders(LOCATION).auth().add();
 
         // Check rights
         RealmManager realmManager = new RealmManager(session);
-        RealmModel realm = realmManager.getKeycloakAdminstrationRealm();
+        RealmModel realm = realmManager.getKeycloakAdministrationRealm();
         AdminPermissionEvaluator realmAuth = AdminPermissions.evaluator(session, realm, auth);
         realmAuth.users().requireManage();
 
@@ -136,11 +139,11 @@ public class CtAdminRoot {
         }
 
         logger.debugf(MSG_AUTH_ADMIN_ACCESS, auth.getUser().getUsername());
-        Cors.builder().allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().add();
+        Cors.builder().checkAllowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", DELETE).exposedHeaders(LOCATION).auth().add();
 
         // Check rights
         RealmManager realmManager = new RealmManager(session);
-        RealmModel realm = realmManager.getKeycloakAdminstrationRealm();
+        RealmModel realm = realmManager.getKeycloakAdministrationRealm();
         AdminPermissionEvaluator realmAuth = AdminPermissions.evaluator(session, realm, auth);
         realmAuth.users().requireView();
 

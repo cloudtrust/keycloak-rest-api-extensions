@@ -160,4 +160,15 @@ public class VerifyEmailRequiredAction implements RequiredActionProvider, Requir
     public String getDisplayText() {
         return "Verify Email (TrustID)";
     }
+
+    /**
+     * Keycloak 26.6.0 flipped the {@link RequiredActionFactory#isOneTimeAction()} default from
+     * false to true. {@code CtExecuteActionsActionTokenHandler#canUseTokenRepeatedly()} is built
+     * on that value, so inheriting the new default would silently turn ct-verify-email links into
+     * single-use ones. Pin the pre-26.6.0 semantics explicitly.
+     */
+    @Override
+    public boolean isOneTimeAction() {
+        return false;
+    }
 }

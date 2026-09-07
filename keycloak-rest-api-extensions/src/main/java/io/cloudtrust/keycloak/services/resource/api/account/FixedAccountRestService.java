@@ -54,6 +54,8 @@ import java.util.Map;
  */
 public class FixedAccountRestService {
     private static final Logger logger = Logger.getLogger(FixedAccountRestService.class);
+    private static final String CT_EVENT_TYPE = "ct_event_type";
+    private static final String USERNAME = "username";
     private final KeycloakSession session;
     private final Auth auth;
     private final EventBuilder event;
@@ -80,7 +82,7 @@ public class FixedAccountRestService {
 
     @Path("/credentials")
     public FixedAccountCredentialResource credentials() {
-        Cors.builder().allowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().add();
+        Cors.builder().checkAllowedOrigins(auth.getToken()).allowedMethods("GET", "PUT", "POST", "DELETE").exposedHeaders("Location").auth().add();
         if (!Profile.isFeatureEnabled(Profile.Feature.ACCOUNT_API)) {
             throw new NotFoundException();
         }
@@ -118,8 +120,8 @@ public class FixedAccountRestService {
             event.event(EventType.UPDATE_PROFILE)
                     .user(user)
                     .client(auth.getClient())
-                    .detail("ct_event_type", "ACCOUNT_UPDATED")
-                    .detail("username", user.getUsername())
+                    .detail(CT_EVENT_TYPE, "ACCOUNT_UPDATED")
+                    .detail(USERNAME, user.getUsername())
                     .detail("representation", representation)
                     .success();
         }
@@ -144,15 +146,15 @@ public class FixedAccountRestService {
         if (removed) {
             event.event(EventType.UPDATE_PROFILE).user(delUser)
                     .client(auth.getClient())
-                    .detail("ct_event_type", "ACCOUNT_DELETED")
-                    .detail("username", delUser.getUsername())
+                    .detail(CT_EVENT_TYPE, "ACCOUNT_DELETED")
+                    .detail(USERNAME, delUser.getUsername())
                     .success();
-            return Cors.builder().auth().allowedOrigins(auth.getToken()).add(Response.noContent());
+            return Cors.builder().auth().checkAllowedOrigins(auth.getToken()).add(Response.noContent());
         } else {
             event.event(EventType.UPDATE_PROFILE).user(delUser)
                     .client(auth.getClient())
-                    .detail("ct_event_type", "ACCOUNT_DELETED_ERROR")
-                    .detail("username", delUser.getUsername())
+                    .detail(CT_EVENT_TYPE, "ACCOUNT_DELETED_ERROR")
+                    .detail(USERNAME, delUser.getUsername())
                     .success();
             throw ErrorResponse.error("User couldn't be deleted", Response.Status.BAD_REQUEST);
         }

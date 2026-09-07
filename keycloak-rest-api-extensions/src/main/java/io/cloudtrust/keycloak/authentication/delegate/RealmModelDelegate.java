@@ -1439,4 +1439,24 @@ public class RealmModelDelegate implements RealmModel {
     public void setAdminPermissionsClient(ClientModel client) {
         this.delegate.setAdminPermissionsClient(client);
     }
+
+    @Override
+    public boolean isScimApiEnabled() {
+        return this.delegate.isScimApiEnabled();
+    }
+
+    @Override
+    public void setScimApiEnabled(boolean scimApiEnabled) {
+        this.delegate.setScimApiEnabled(scimApiEnabled);
+    }
+
+    @Override
+    public int getMaxSecondaryAuthFailures() {
+        return this.delegate.getMaxSecondaryAuthFailures();
+    }
+
+    @Override
+    public void setMaxSecondaryAuthFailures(int val) {
+        this.delegate.setMaxSecondaryAuthFailures(val);
+    }
 }
