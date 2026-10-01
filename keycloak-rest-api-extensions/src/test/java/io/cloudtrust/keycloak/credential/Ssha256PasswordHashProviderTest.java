@@ -1,4 +1,4 @@
-package io.cloudtrust.keycloak.credential;
+package io.cloudtrust.keycloak.restapi.credential;
 
 import org.junit.jupiter.api.Test;
 import org.keycloak.models.credential.PasswordCredentialModel;

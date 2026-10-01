@@ -1,1 +1,1 @@
-io.cloudtrust.keycloak.authentication.requiredactions.VerifyEmailRequiredAction
+io.cloudtrust.keycloak.restapi.authentication.requiredactions.VerifyEmailRequiredAction
