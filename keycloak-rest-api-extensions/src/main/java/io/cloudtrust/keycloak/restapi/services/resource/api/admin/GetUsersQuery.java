@@ -169,8 +169,8 @@ public class GetUsersQuery {
                     Join<UserEntity, UserAttributeEntity> attributesJoin = root.join("attributes", JoinType.LEFT);
 
                     attributePredicates.add(builder.and(
-                            builder.equal(builder.lower(attributesJoin.get("name")), key.toLowerCase()),
-                            builder.equal(builder.lower(attributesJoin.get("value")), value.toLowerCase())));
+                            builder.equal(attributesJoin.get("name"), key),
+                            builder.equal(attributesJoin.get("value"), value)));
 
                     break;
             }
