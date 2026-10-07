@@ -364,7 +364,7 @@ public class CtUsersResource {
                                             @Parameter(description = "Boolean representing if user is enabled or not") @QueryParam("enabled") Boolean enabled,
                                             @Parameter(description = "Boolean which defines whether brief representations are returned (default: false)") @QueryParam("briefRepresentation") Boolean briefRepresentation,
                                             @Parameter(description = "Boolean which defines whether the params \"last\", \"first\", \"email\" and \"username\" must match exactly") @QueryParam("exact") Boolean exact,
-                                            @Parameter(description = "A query to search for custom attributes, in the format 'key1:value2 key2:value2'") @QueryParam("q") String searchQuery) {
+                                            @Parameter(description = "A query to search for custom attributes, in the format 'key1:value2 key2:value2'. Those keys and values are case sensitive") @QueryParam("q") String searchQuery) {
         UserPermissionEvaluator userPermissionEvaluator = auth.users();
         userPermissionEvaluator.requireQuery();
 
