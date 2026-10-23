@@ -48,7 +48,8 @@ import java.util.Map;
 
 public class CtUserResource {
     private static final Logger logger = Logger.getLogger(CtUserResource.class);
-    private static final String USER_EMAIL_MISSING = "User email missing";
+    private static final String USER_DISABLED = "keycloak.user.disabled";
+    private static final String USER_EMAIL_MISSING = "keycloak.user.email.missing";
 
     protected static final String ATTRIB_NAME_ID = "saml.persistent.name.id.for.*";
 
@@ -97,7 +98,7 @@ public class CtUserResource {
         }
 
         if (!user.isEnabled()) {
-            throw new WebApplicationException(ErrorResponse.error("User is disabled", Response.Status.BAD_REQUEST));
+            throw ErrorResponse.error(USER_DISABLED, Response.Status.BAD_REQUEST);
         }
 
         if (emailModel.getTheming() != null) {
