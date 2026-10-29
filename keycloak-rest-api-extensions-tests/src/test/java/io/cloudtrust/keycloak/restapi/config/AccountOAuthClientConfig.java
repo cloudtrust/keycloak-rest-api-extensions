@@ -1,7 +1,7 @@
 package io.cloudtrust.keycloak.restapi.config;
 
 import org.keycloak.testframework.oauth.DefaultOAuthClientConfiguration;
-import org.keycloak.testframework.realm.ClientConfigBuilder;
+import org.keycloak.testframework.realm.ClientBuilder;
 
 /**
  * Configuration of the OAuth client that the test framework creates for {@code @InjectOAuthClient}.
@@ -24,7 +24,7 @@ public class AccountOAuthClientConfig extends DefaultOAuthClientConfiguration {
     public static final String CLIENT_ID = "restapi-test-app";
 
     @Override
-    public ClientConfigBuilder configure(ClientConfigBuilder client) {
+    public ClientBuilder configure(ClientBuilder client) {
         return super.configure(client).clientId(CLIENT_ID);
     }
 }

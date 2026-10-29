@@ -138,7 +138,10 @@ public class CtExecuteActionsActionTokenHandler extends AbstractActionTokenHandl
             return true;
         }
         if (emailClaim.equalsIgnoreCase(user.getEmail())) {
-            user.setEmailVerified(true);
+            // As Keycloak since 26.8.0: only an actual email verification marks the email as verified
+            if (isCtVerifyEmail) {
+                user.setEmailVerified(true);
+            }
             return true;
         }
         logger.infof("User is trying to verify a non matching email");
