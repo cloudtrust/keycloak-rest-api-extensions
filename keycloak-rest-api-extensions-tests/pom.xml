@@ -5,12 +5,12 @@
     <parent>
         <groupId>io.cloudtrust</groupId>
         <artifactId>kc-cloudtrust-testsuite</artifactId>
-        <version>27.0.0</version>
+        <version>28.0.0-SNAPSHOT</version>
         <relativePath />
     </parent>
 
     <artifactId>keycloak-rest-api-extensions-tests</artifactId>
-    <version>27.0.2-SNAPSHOT</version>
+    <version>28.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -81,7 +81,7 @@
                         <!-- Raise Quarkus startup timeout: the default 120s can be exceeded on slow/contended machines or slow network connectivity
                             This is relevant for Mauritius team due to connectivity latency with artifactory. Please do not modify!
                         -->
-                        <keycloak.distribution.start.timeout>300</keycloak.distribution.start.timeout>
+                        <kc.test.server.start.timeout>300</kc.test.server.start.timeout>
                     </systemPropertyVariables>
                     <environmentVariables>
                         <KC_BOOTSTRAP_ADMIN_USERNAME>admin</KC_BOOTSTRAP_ADMIN_USERNAME>

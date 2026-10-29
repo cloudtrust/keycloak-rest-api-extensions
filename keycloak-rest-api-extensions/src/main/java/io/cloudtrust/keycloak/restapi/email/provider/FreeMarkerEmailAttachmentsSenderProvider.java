@@ -273,6 +273,8 @@ public class FreeMarkerEmailAttachmentsSenderProvider {
 
         if (starttls) {
             props.setProperty("mail.smtp.starttls.enable", "true");
+            // As Keycloak's DefaultEmailSenderProvider since 26.8.1: fail instead of falling back to plaintext
+            props.setProperty("mail.smtp.starttls.required", "true");
         }
 
         if (ssl || starttls) {
