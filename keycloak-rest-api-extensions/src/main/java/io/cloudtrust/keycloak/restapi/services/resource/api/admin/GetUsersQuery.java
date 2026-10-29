@@ -32,6 +32,9 @@ import static org.keycloak.utils.StreamsUtil.closing;
 
 public class GetUsersQuery {
     // Constants, searchForUserStream and getSearchOptionPredicateArray are imported from Keycloak code. See JpaUserEntity
+    // (synced with Keycloak 26.8.1: escaped LIKE search in getSearchOptionPredicateArray. Not taken: createdAfter/createdBefore criteria,
+    // custom long-value search attributes. Our differences kept: serviceAccount filter read from the session attribute, "=" / "%" in name and email criteria)
+    private static final char ESCAPE_BACKSLASH = '\\';
     private static final String EMAIL = "email";
     private static final String EMAIL_VERIFIED = "emailVerified";
     private static final String USERNAME = "username";
@@ -195,21 +198,18 @@ public class GetUsersQuery {
             orPredicates.add(builder.equal(builder.lower(from.get(FIRST_NAME)), value));
             orPredicates.add(builder.equal(builder.lower(from.get(LAST_NAME)), value));
         } else {
-            if (value.length() >= 2 && value.charAt(0) == '*' && value.charAt(value.length() - 1) == '*') {
-                // infix search
-                value = "%" + value.substring(1, value.length() - 1) + "%";
-            } else {
-                // default to prefix search
-                if (value.length() > 0 && value.charAt(value.length() - 1) == '*') {
-                    value = value.substring(0, value.length() - 1);
-                }
+            // As JpaUserProvider#getSearchOptionPredicate (Keycloak 26.6): LIKE special characters of the search are escaped, '*' is the wildcard
+            boolean endsWithWildcard = value.endsWith("*");
+            value = value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+            value = value.replace("*", "%");
+            if (value.isEmpty() || !endsWithWildcard) {
                 value += "%";
             }
 
-            orPredicates.add(builder.like(from.get(USERNAME), value));
-            orPredicates.add(builder.like(from.get(EMAIL), value));
-            orPredicates.add(builder.like(builder.lower(from.get(FIRST_NAME)), value));
-            orPredicates.add(builder.like(builder.lower(from.get(LAST_NAME)), value));
+            orPredicates.add(builder.like(from.get(USERNAME), value, ESCAPE_BACKSLASH));
+            orPredicates.add(builder.like(from.get(EMAIL), value, ESCAPE_BACKSLASH));
+            orPredicates.add(builder.like(builder.lower(from.get(FIRST_NAME)), value, ESCAPE_BACKSLASH));
+            orPredicates.add(builder.like(builder.lower(from.get(LAST_NAME)), value, ESCAPE_BACKSLASH));
         }
 
         return orPredicates.toArray(new Predicate[0]);

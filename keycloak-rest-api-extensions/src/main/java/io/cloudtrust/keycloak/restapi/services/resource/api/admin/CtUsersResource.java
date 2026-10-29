@@ -43,6 +43,7 @@ import org.keycloak.services.resources.admin.fgap.AdminPermissionEvaluator;
 import org.keycloak.services.resources.admin.fgap.UserPermissionEvaluator;
 import org.keycloak.userprofile.UserProfile;
 import org.keycloak.userprofile.UserProfileProvider;
+import org.keycloak.utils.GroupUtils;
 import org.keycloak.utils.SearchQueryUtils;
 
 import java.text.MessageFormat;
@@ -112,6 +113,8 @@ public class CtUsersResource {
      * This method is a copy/paste of org.keycloak.services.resources.admin.UsersResource where:
      * - we add a consumer processing
      * - we removed call to RepresentationToModel.createGroups
+     * (synced with Keycloak 26.8.1: admin-group check on the groups joined in getGroups, requireResetPassword when a password is given.
+     * Not taken: createVerifiableCredentials (new OID4VC feature) and ErrorResponse.resolveMessage (refactoring of the same message))
      *
      * @param rep         User
      * @param userUpdater Callback used to update an user
@@ -148,6 +151,10 @@ public class CtUsersResource {
             UserResource.updateUserFromRep(profile, user, rep, session, false);
             RepresentationToModel.createFederatedIdentities(rep, session, realm, user);
 
+            if (rep.getCredentials() != null && rep.getCredentials().stream()
+                    .anyMatch(c -> c.getType() == null || org.keycloak.representations.idm.CredentialRepresentation.PASSWORD.equals(c.getType()))) {
+                auth.users().requireResetPassword(user);
+            }
             RepresentationToModel.createCredentials(rep, session, realm, user, true);
             /* Cloudtrust specific - begin */
             userUpdater.accept(user);
@@ -172,10 +179,11 @@ public class CtUsersResource {
     }
 
     /**
-     * Copied/pasted from inherited UsersResource
+     * Copied/pasted from inherited UsersResource#canCreateGroupMembers (synced with Keycloak 26.8.1: fine-grained permissions V2 feature,
+     * admin-group roles check)
      */
     private boolean inheritedCanCreateGroupMembers(UserRepresentation rep) {
-        if (!Profile.isFeatureEnabled(Profile.Feature.ADMIN_FINE_GRAINED_AUTHZ)) {
+        if (!Profile.isFeatureEnabled(Profile.Feature.ADMIN_FINE_GRAINED_AUTHZ) && !Profile.isFeatureEnabled(Profile.Feature.ADMIN_FINE_GRAINED_AUTHZ_V2)) {
             return false;
         }
 
@@ -195,6 +203,7 @@ public class CtUsersResource {
         for (GroupModel group : groups) {
             auth.groups().requireManageMembers(group);
             auth.groups().requireManageMembership(group);
+            GroupUtils.checkAdminGroupRoles(group, auth);
         }
 
         return true;
@@ -211,6 +220,7 @@ public class CtUsersResource {
                 }
 
                 auth.groups().requireManageMembership(group);
+                GroupUtils.checkAdminGroupRoles(group, auth);
                 res.add(group);
             }
         }

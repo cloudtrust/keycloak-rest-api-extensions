@@ -11,10 +11,15 @@ import org.junit.jupiter.api.Test;
 import org.keycloak.testframework.annotations.KeycloakIntegrationTest;
 import org.keycloak.testframework.mail.MailServer;
 import org.keycloak.testframework.mail.annotations.InjectMailServer;
+import org.keycloak.testframework.ui.annotations.InjectWebDriver;
+import org.keycloak.testframework.ui.webdriver.ManagedWebDriver;
+import org.openqa.selenium.By;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -27,8 +32,12 @@ class CtUserResourceTest extends AbstractRestApiExtensionTest {
     @InjectMailServer
     MailServer mailServer;
 
+    @InjectWebDriver
+    ManagedWebDriver webDriver;
+
     private static final String[] ACTIONS = new String[]{ExecuteActionsEmailHelper.VERIFY_EMAIL_ACTION};
     private static final String EXECUTE_ACTIONS_EMAIL_FMT = "/realms/master/api/admin/realms/test/users/%s/execute-actions-email";
+    private static final Pattern ACTION_TOKEN_LINK = Pattern.compile("https?://[^\\s\"'<>]+action-token\\?[^\\s\"'<>]+");
 
     @Test
     void sendExecuteActionsEmailNominalCaseTest() throws IOException, URISyntaxException, MessagingException {
@@ -52,6 +61,41 @@ class CtUserResourceTest extends AbstractRestApiExtensionTest {
     void sendExecuteActionsEmailRealmNotFoundTest() throws IOException, URISyntaxException {
         // unknown realm does not exist
         failureCase("?themeRealm=unknown", 400);
+    }
+
+    @Test
+    void executeActionsLinkWithoutVerifyEmailDoesNotVerifyEmail() throws Exception {
+        // Since Keycloak 26.8.0, only an actual email verification marks the email as verified
+        assertThat(followExecuteActionsLink("UPDATE_PASSWORD"), is(false));
+    }
+
+    @Test
+    void executeActionsLinkWithVerifyEmailVerifiesEmail() throws Exception {
+        assertThat(followExecuteActionsLink(ExecuteActionsEmailHelper.VERIFY_EMAIL_ACTION), is(true));
+    }
+
+    /**
+     * Sends an execute-actions email to a user whose email is not verified, opens the link it contains and returns
+     * whether the email of the user is then verified
+     */
+    private boolean followExecuteActionsLink(String action) throws Exception {
+        var userResource = testRealm.admin().users().get(testRealm.admin().users().search("john-doh@localhost").getFirst().getId());
+        var user = userResource.toRepresentation();
+        user.setEmailVerified(false);
+        userResource.update(user);
+
+        var path = String.format(EXECUTE_ACTIONS_EMAIL_FMT, user.getId());
+        var nbReceived = mailServer.getReceivedMessages().length;
+        api(keycloak, testRealm).callJSON("PUT", path, new String[]{action});
+        assertThat(mailServer.getReceivedMessages().length, is(nbReceived + 1));
+
+        Matcher link = ACTION_TOKEN_LINK.matcher(getMailContent(mailServer.getReceivedMessages()[nbReceived]));
+        assertThat(link.find(), is(true));
+        // Opened without an authentication session, the link first shows a "Perform the following action(s)" page
+        // whose link, bound to the new authentication session, the user clicks to proceed
+        webDriver.open(link.group().replace("&amp;", "&"));
+        webDriver.findElement(By.partialLinkText("Click here")).click();
+        return userResource.toRepresentation().isEmailVerified();
     }
 
     private void successCase(String queryParams) throws IOException, URISyntaxException, MessagingException {

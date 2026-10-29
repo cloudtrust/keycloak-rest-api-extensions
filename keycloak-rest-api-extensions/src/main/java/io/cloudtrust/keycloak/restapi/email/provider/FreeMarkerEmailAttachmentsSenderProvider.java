@@ -43,7 +43,8 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * Inspired by FreeMarkerEmailTemplateProvider and DefaultEmailSenderProvider
+ * Inspired by FreeMarkerEmailTemplateProvider and DefaultEmailSenderProvider (synced with Keycloak 26.8.1: STARTTLS required, write timeout;
+ * not taken: realm-configurable timeouts, "Allow UTF-8" and address validation/IDN conversion)
  *
  * @author fpe
  */
@@ -273,6 +274,8 @@ public class FreeMarkerEmailAttachmentsSenderProvider {
 
         if (starttls) {
             props.setProperty("mail.smtp.starttls.enable", "true");
+            // As Keycloak's DefaultEmailSenderProvider since 26.8.1: fail instead of falling back to plaintext
+            props.setProperty("mail.smtp.starttls.required", "true");
         }
 
         if (ssl || starttls) {
@@ -281,6 +284,7 @@ public class FreeMarkerEmailAttachmentsSenderProvider {
 
         props.setProperty("mail.smtp.timeout", "10000");
         props.setProperty("mail.smtp.connectiontimeout", "10000");
+        props.setProperty("mail.smtp.writetimeout", "10000");
 
         return props;
     }

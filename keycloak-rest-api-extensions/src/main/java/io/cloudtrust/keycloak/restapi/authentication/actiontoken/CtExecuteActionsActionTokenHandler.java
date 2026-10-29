@@ -35,7 +35,8 @@ import jakarta.ws.rs.core.UriInfo;
 import java.util.Objects;
 
 /**
- * Inspired by Keycloak ExecuteActionsActionTokenHandler
+ * Inspired by Keycloak ExecuteActionsActionTokenHandler (synced with Keycloak 26.8.1: the e-mail is verified only when the token
+ * carries the verify-email action, see setEmailVerified)
  */
 public class CtExecuteActionsActionTokenHandler extends AbstractActionTokenHandler<CtExecuteActionsActionToken> {
     private static final Logger logger = Logger.getLogger(CtExecuteActionsActionTokenHandler.class);
@@ -138,7 +139,10 @@ public class CtExecuteActionsActionTokenHandler extends AbstractActionTokenHandl
             return true;
         }
         if (emailClaim.equalsIgnoreCase(user.getEmail())) {
-            user.setEmailVerified(true);
+            // As Keycloak since 26.8.0: only an actual email verification marks the email as verified
+            if (isCtVerifyEmail) {
+                user.setEmailVerified(true);
+            }
             return true;
         }
         logger.infof("User is trying to verify a non matching email");
