@@ -2,6 +2,8 @@ package io.cloudtrust.keycloak.restapi.credential;
 
 import io.cloudtrust.keycloak.Events;
 import io.micrometer.core.instrument.Counter;
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.ws.rs.core.HttpHeaders;
 import io.micrometer.core.instrument.Meter;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
@@ -41,14 +43,24 @@ public class CtPasswordCredentialProvider extends PasswordCredentialProvider {
         return createdCredential;
     }
 
+    private HttpHeaders getRequestHeaders() {
+        try {
+            return session.getContext().getRequestHeaders();
+        } catch (ContextNotActiveException e) {
+            // Since Keycloak 26.7.0, throws instead of returning null when no request is active (e.g. bootstrap admin creation)
+            return null;
+        }
+    }
+
     private void emitEvent(RealmModel realm, UserModel user, String credentialId) {
-        if (session.getContext().getRequestHeaders() == null) {
+        HttpHeaders requestHeaders = getRequestHeaders();
+        if (requestHeaders == null) {
             logger.warn("no http request header, cannot have enough information to emit event for password creation, realm=" + realm.getName() + ", userId=" + user.getId());
             return;
         }
 
         // Since Keycloak 26.6.4 this returns a nullable AuthHeader (scheme + token) instead of the raw token.
-        AppAuthManager.AuthHeader authHeader = AppAuthManager.extractAuthorizationHeaderTokenOrReturnNull(session.getContext().getRequestHeaders());
+        AppAuthManager.AuthHeader authHeader = AppAuthManager.extractAuthorizationHeaderTokenOrReturnNull(requestHeaders);
         String token = authHeader == null ? null : authHeader.getToken();
         if (StringUtils.isBlank(token)) {
             emitUpdatePasswordEvent(realm, user, credentialId);

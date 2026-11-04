@@ -30,7 +30,8 @@ import java.util.Collections;
 import java.util.Objects;
 
 /**
- * Inspired by Keycloak VerifyEmail
+ * Inspired by Keycloak VerifyEmail (checked against Keycloak 26.8.1; not taken: resend cooldown, UPDATE_EMAIL precedence,
+ * restart page for a new registration, max-auth-age config)
  */
 public class VerifyEmailRequiredAction implements RequiredActionProvider, RequiredActionFactory {
     private static final Logger logger = Logger.getLogger(VerifyEmailRequiredAction.class);

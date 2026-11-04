@@ -39,11 +39,12 @@ public class CtRealmsAdminResource {
         if (!auth.getRealm().equals(realmManager.getKeycloakAdministrationRealm()) && !auth.getRealm().equals(realm)) {
             throw new ForbiddenException();
         }
+        // Synced with Keycloak 26.8.1 RealmsAdminResource#getRealmAdmin: the realm is set in the context before the permission evaluator is created
+        session.getContext().setRealm(realm);
         AdminPermissionEvaluator realmAuth = AdminPermissions.evaluator(session, realm, auth);
 
         ClientConnection clientConnection = session.getContext().getConnection();
         AdminEventBuilder adminEvent = new AdminEventBuilder(realm, auth, session, clientConnection);
-        session.getContext().setRealm(realm);
 
         return new CtRealmAdminResource(realmAuth, adminEvent, session);
     }

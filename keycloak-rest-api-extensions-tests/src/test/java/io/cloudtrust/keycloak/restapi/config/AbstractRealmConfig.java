@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jboss.logging.Logger;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.testframework.realm.RealmConfig;
-import org.keycloak.testframework.realm.RealmConfigBuilder;
+import org.keycloak.testframework.realm.RealmBuilder;
 
 import java.io.IOException;
 
@@ -20,15 +20,15 @@ public class AbstractRealmConfig implements RealmConfig {
     }
 
     @Override
-    public RealmConfigBuilder configure(RealmConfigBuilder realmConfigBuilder) {
+    public RealmBuilder configure(RealmBuilder realmBuilder) {
         try {
             var inputStream = getClass().getResourceAsStream(filename);
             var realmRepresentation = new ObjectMapper().readValue(inputStream, RealmRepresentation.class);
             customizeRealm(realmRepresentation);
-            return RealmConfigBuilder.update(realmRepresentation);
+            return RealmBuilder.update(realmRepresentation);
         } catch (IOException e) {
             Logger.getLogger(AbstractRealmConfig.class).error("Configuration failed", e);
         }
-        return realmConfigBuilder;
+        return realmBuilder;
     }
 }

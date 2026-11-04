@@ -14,7 +14,8 @@ import java.util.stream.Collectors;
 
 public class CtPasswordCredentialProviderFactory extends PasswordCredentialProviderFactory {
     /* START - Copied from parent class, private variables renamed with prefix ct */
-    private static final String HASHES_COUNTER_TAGS = "validations-counter-tags";
+    private static final String METRICS_ENABLED_OPTION = "metrics-enabled"; // key of org.keycloak.config.MetricsOptions.METRICS_ENABLED
+    private static final String HASHES_COUNTER_TAGS ="validations-counter-tags";
     private static final String KEYCLOAK_METER_NAME_PREFIX = "keycloak.";
     private static final String LOGIN_PASSWORD_VERIFY_METER_NAME = KEYCLOAK_METER_NAME_PREFIX + "credentials.password.hashing";
     private static final String LOGIN_PASSWORD_VERIFY_METER_DESCRIPTION = "Password validations";
@@ -33,10 +34,10 @@ public class CtPasswordCredentialProviderFactory extends PasswordCredentialProvi
         return new CtPasswordCredentialProvider(session, ctMeterProvider, ctMetricsEnabled, ctWithRealmInMetric, ctWithAlgorithmInMetric, ctWithHashingStrengthInMetric, ctWithOutcomeInMetric);
     }
 
-    /* START - Copied from parent class */
+    /* START - Copied from parent class (synced with Keycloak 26.8.1: metrics are enabled by the global "metrics-enabled" option, read from the root scope) */
     @Override
     public void init(Config.Scope config) {
-        ctMetricsEnabled = config.getBoolean("metrics-enabled", false);
+        ctMetricsEnabled = config.root().getBoolean(METRICS_ENABLED_OPTION, false);
         if (ctMetricsEnabled) {
             ctMeterProvider = Counter.builder(LOGIN_PASSWORD_VERIFY_METER_NAME)
                     .description(LOGIN_PASSWORD_VERIFY_METER_DESCRIPTION)

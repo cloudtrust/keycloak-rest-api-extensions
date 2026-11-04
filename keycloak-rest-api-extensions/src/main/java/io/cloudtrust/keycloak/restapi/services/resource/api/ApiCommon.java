@@ -15,9 +15,16 @@ import org.keycloak.services.resources.admin.AdminAuth;
 
 public class ApiCommon {
 
+    /**
+     * Key of the session attribute where Keycloak's AdminRoot stores the authenticated AdminAuth (private in AdminRoot);
+     * read by AdminRoot#getRealmAdminAuth, used by Keycloak's DefaultPermissions
+     */
+    static final String ADMIN_AUTH_KEY = "AdminRoot.adminAuth";
+
     private ApiCommon() {}
     /*
-     * Copied/pasted from org.keycloak.services.resources.admin.AdminRoot
+     * Copied/pasted from org.keycloak.services.resources.admin.AdminRoot#authenticateRealmAdminRequest (synced with Keycloak 26.8.1).
+     * Our difference: the headers are a parameter (AdminRoot reads them from the session context).
      */
     public static AdminAuth authenticateRealmAdminRequest(KeycloakSession session, HttpHeaders headers) {
         String tokenString = AppAuthManager.extractAuthorizationHeaderToken(headers);
@@ -47,6 +54,10 @@ public class ApiCommon {
             throw new NotAuthorizedException("Bearer");
         }
 
-        return new AdminAuth(realm, authResult.token(), authResult.user(), authResult.client());
+        session.getContext().setBearerToken(authResult.token());
+
+        AdminAuth result = new AdminAuth(realm, authResult.token(), authResult.user(), authResult.client());
+        session.setAttribute(ADMIN_AUTH_KEY, result);
+        return result;
     }
 }
