@@ -28,15 +28,15 @@ public class EmailSender {
 
     public static Response sendMail(KeycloakSession session, RealmModel realm, UserModel user, EmailModel emailModel, Locale locale, Map<String, Object> attributes) {
         if (emailModel.getTheming() == null && emailModel.getBasicMessage() == null) {
-            throw ErrorResponse.error("Either BasicMessage or Theming configuration should be configured", Response.Status.BAD_REQUEST);
+            throw ErrorResponse.error("keycloak.email.basicMessageOrTheming.missing", Response.Status.BAD_REQUEST);
         }
         if (emailModel.getTheming() != null) {
             if (StringUtils.isBlank(emailModel.getTheming().getTemplate())) {
-                throw ErrorResponse.error("Template email missing", Response.Status.BAD_REQUEST);
+                throw ErrorResponse.error("keycloak.email.template.missing", Response.Status.BAD_REQUEST);
             }
 
             if (StringUtils.isBlank(emailModel.getTheming().getSubjectKey())) {
-                throw ErrorResponse.error("Subject missing", Response.Status.BAD_REQUEST);
+                throw ErrorResponse.error("keycloak.email.subject.missing", Response.Status.BAD_REQUEST);
             }
         }
 
